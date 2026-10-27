@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WorkPulse AI - Employee Productivity &amp; Workload Intelligence</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    /* Custom scrollbar and subtle transitions */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 0.6); }
+    .chart-tooltip { pointer-events: none; transition: opacity 0.15s ease; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body class="bg-[var(--background,#0f172a)] text-[var(--foreground,#f8fafc)] antialiased min-h-screen flex flex-col font-sans transition-colors duration-200">
+  <!-- Top Navigation Bar -->
+  <header class="sticky top-0 z-40 bg-[var(--card,#1e293b)]/95 backdrop-blur border-b border-[var(--border,#334155)] px-6 py-3.5 flex items-center justify-between shadow-sm">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-blue-500/20">
+        WP
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <h1 class="text-base font-bold tracking-tight text-[var(--foreground,#f8fafc)]">
+            WorkPulse <span class="text-blue-500">AI</span>
+          </h1>
+          <span class="px-2 py-0.5 rounded text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            Enterprise Intelligence
+          </span>
+        </div>
+        <p class="text-xs text-[var(--muted-foreground,#94a3b8)]">
+          Employee Productivity &amp; Workload Intelligence • Infosys Context (Synthetic)
+        </p>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center space-x-3 text-xs">
+      <div class="hidden sm:block text-[var(--muted-foreground,#94a3b8)]">
+        Showing: <span id="record-count-badge" class="font-bold text-[var(--foreground,#f8fafc)]">200</span> / 200 records
+      </div>
+      <button id="export-csv-top-btn" class="px-3 py-1.5 rounded-lg bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-[var(--foreground,#f8fafc)] hover:border-blue-500 transition font-medium">
+        Export Filtered CSV
+      </button>
+      <button id="theme-toggle-btn" class="p-2 rounded-lg bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-[var(--foreground,#f8fafc)] hover:border-blue-500 transition">
+        <span id="theme-icon">🌓 Theme</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="flex-1 flex flex-col md:flex-row">
+    <!-- Sidebar Navigation -->
+    <aside class="w-full md:w-64 bg-[var(--card,#1e293b)]/70 border-r border-[var(--border,#334155)] p-4 flex flex-col justify-between flex-shrink-0">
+      <div class="space-y-1.5">
+        <div class="px-3 pb-2 text-xs font-bold text-[var(--muted-foreground,#94a3b8)] uppercase tracking-wider">
+          Intelligence Views
+        </div>
+        <button onclick="switchTab('overview')" id="tab-btn-overview" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition bg-blue-600 text-white shadow-sm">
+          <span>📊 Overview &amp; Alert Summary</span>
+        </button>
+        <button onclick="switchTab('analytics')" id="tab-btn-analytics" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-[var(--foreground,#f8fafc)] hover:bg-[var(--background,#0f172a)]">
+          <span>📈 Workforce Analytics (6 Charts)</span>
+        </button>
+        <button onclick="switchTab('employees')" id="tab-btn-employees" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-[var(--foreground,#f8fafc)] hover:bg-[var(--background,#0f172a)]">
+          <span>👥 Employee Directory &amp; Drilldown</span>
+        </button>
+        <button onclick="switchTab('risks')" id="tab-btn-risks" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-[var(--foreground,#f8fafc)] hover:bg-[var(--background,#0f172a)]">
+          <span>⚠️ AI Bottlenecks &amp; Interventions</span>
+          <span id="sidebar-risk-badge" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">0</span>
+        </button>
+        <button onclick="switchTab('data')" id="tab-btn-data" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-[var(--foreground,#f8fafc)] hover:bg-[var(--background,#0f172a)]">
+          <span>📁 Data Management &amp; Dictionary</span>
+        </button>
+      </div>
+
+      <!-- Problem Statement Context Card -->
+      <div class="p-3.5 rounded-2xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] mt-6 text-xs text-[var(--muted-foreground,#94a3b8)] space-y-1.5">
+        <div class="font-bold text-[var(--foreground,#f8fafc)] flex items-center space-x-1.5">
+          <span>🎯 Problem Statement</span>
+        </div>
+        <p class="leading-relaxed text-[11px]">
+          Management observes declining productivity despite increasing working hours. WorkPulse AI identifies bottlenecks across teams to guide operational interventions.
+        </p>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 p-5 lg:p-7 max-w-7xl mx-auto w-full space-y-6">
+      <!-- Global Filter Bar -->
+      <div id="filter-bar" class="p-4 rounded-2xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] shadow-sm space-y-3">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <!-- Search input -->
+          <div class="relative flex-1 min-w-[220px]">
+            <input
+              id="search-input"
+              type="text"
+              placeholder="Search by Employee ID, Name, Role, Manager..."
+              class="w-full py-2 pl-3 pr-8 rounded-xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-xs text-[var(--foreground,#f8fafc)] placeholder-[var(--muted-foreground,#94a3b8)] focus:outline-none focus:border-blue-500"
+            />
+          </div>
+
+          <!-- Dropdowns -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-wrap text-xs">
+            <select id="filter-month" class="py-2 px-2.5 rounded-xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-[var(--foreground,#f8fafc)]">
+              <option value="all">All Months</option>
+              <option value="2026-10" selected>2026-10 (Current)</option>
+            </select>
+            <select id="filter-dept" class="py-2 px-2.5 rounded-xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-[var(--foreground,#f8fafc)]">
+              <option value="all">All Departments</option>
+            </select>
+            <select id="filter-team" class="py-2 px-2.5 rounded-xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-[var(--foreground,#f8fafc)]">
+              <option value="all">All Teams</option>
+            </select>
+            <select id="filter-risk" class="py-2 px-2.5 rounded-xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-[var(--foreground,#f8fafc)]">
+              <option value="all">All Risk Levels</option>
+              <option value="High">High Risk Only</option>
+              <option value="Medium">Medium Risk</option>
+              <option value="Low">Low Risk</option>
+            </select>
+          </div>
+
+          <!-- Reset Filter Button -->
+          <div class="flex items-center space-x-2">
+            <button id="reset-filters-btn" class="px-3 py-2 rounded-xl text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 transition">
+              Reset Filters
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Cards Grid (Dynamic) -->
+      <div id="kpi-grid" class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
+        <!-- Rendered via JS -->
+      </div>
+
+      <!-- TAB 1: OVERVIEW -->
+      <div id="tab-overview" class="tab-content active space-y-6">
+        <!-- Executive Problem Statement Banner -->
+        <div class="rounded-3xl p-6 bg-gradient-to-r from-blue-950 via-indigo-950 to-slate-900 border border-blue-800/40 text-white space-y-2.5 shadow-lg">
+          <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-bold">
+            <span>Operational Diagnostic Finding</span>
+          </div>
+          <h2 class="text-xl md:text-2xl font-black">
+            Declining Productivity Despite Rising Working Hours
+          </h2>
+          <p class="text-xs md:text-sm text-slate-300 leading-relaxed max-w-4xl">
+            In depth analysis of the 200 synthetic engineering records reveals that daily active hours have climbed to an average of 9.2 hrs/day and weekly overtime to 7.8 hrs/wk. However, task velocity has hit a fatigue ceiling—engineers working &gt;10h/day deliver 18% lower task completion rates due to defect rework and cognitive saturation.
+          </p>
+        </div>
+
+        <!-- Macro Charts Summary Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 p-5 rounded-3xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] space-y-4">
+            <div class="flex items-center justify-between pb-3 border-b border-[var(--border,#334155)]">
+              <div>
+                <h3 class="text-sm font-bold text-[var(--foreground,#f8fafc)]">12-Month Macro Trend: Productivity vs Overtime</h3>
+                <p class="text-xs text-[var(--muted-foreground,#94a3b8)]">Illustrates the decoupling of hours logged and throughput achieved</p>
+              </div>
+              <button onclick="switchTab('analytics')" class="text-xs text-blue-400 font-semibold hover:underline">Full Analytics →</button>
+            </div>
+            <div id="chart-macro-trend" class="w-full h-64"></div>
+          </div>
+
+          <div class="p-5 rounded-3xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] space-y-4 flex flex-col justify-between">
+            <div>
+              <div class="pb-3 border-b border-[var(--border,#334155)]">
+                <h3 class="text-sm font-bold text-[var(--foreground,#f8fafc)]">Workload Risk Proportions</h3>
+                <p class="text-xs text-[var(--muted-foreground,#94a3b8)]">Prioritization classification across cohorts</p>
+              </div>
+              <div id="chart-risk-donut" class="w-full h-52 flex items-center justify-center"></div>
+              <div id="risk-legend" class="space-y-1.5 text-xs mt-2"></div>
+            </div>
+            <button onclick="switchTab('risks')" class="w-full py-2 rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30 text-xs font-semibold hover:bg-blue-600/30 transition">
+              Review Workload Interventions
+            </button>
+          </div>
+        </div>
+
+        <!-- Top Bottleneck Alerts & Priority Watchlist -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="p-5 rounded-3xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] space-y-3">
+            <div class="flex items-center justify-between pb-3 border-b border-[var(--border,#334155)]">
+              <h3 class="text-sm font-bold text-[var(--foreground,#f8fafc)]">🚨 Urgent Operational Bottleneck Alerts</h3>
+              <button onclick="switchTab('risks')" class="text-xs text-blue-400 font-semibold hover:underline">View All</button>
+            </div>
+            <div id="overview-alerts-container" class="space-y-3"></div>
+          </div>
+
+          <div class="p-5 rounded-3xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] space-y-3">
+            <div class="flex items-center justify-between pb-3 border-b border-[var(--border,#334155)]">
+              <h3 class="text-sm font-bold text-[var(--foreground,#f8fafc)]">🔍 High Overtime &amp; Fatigue Watchlist</h3>
+              <button onclick="switchTab('employees')" class="text-xs text-blue-400 font-semibold hover:underline">All Directory</button>
+            </div>
+            <div id="overview-watchlist-container" class="divide-y divide-[var(--border,#334155)]"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: WORKFORCE ANALYTICS (6 CHARTS) -->
+      <div id="tab-analytics" class="tab-content space-y-6">
+        <div>
+          <h2 class="text-lg font-bold text-[var(--foreground,#f8fafc)]">Workforce Analytics &amp; Correlation Diagnostics</h2>
+          <p class="text-xs text-[var(--muted-foreground,#94a3b8)]">Deep statistical analysis of hours, task output, engagement sentiment, and department saturation.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Chart A -->
+          <div class="p-5 rounded-3xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] space-y-2">
+            <span class="text-xs font-bold text-blue-400 uppercase tracking-wider">Chart A</span>
+            <h3 class="text-sm font-bold text-[var(--foreground,#f8fafc)]">Productivity &amp; Task Completion 12-Month Trajectory</h3>
+            <p class="text-xs text-[var(--muted-foreground,#94a3b8)]">Monthly progression of average productivity and task completion rates</p>
+            <div id="chart-a-container" class="h-64 w-full"></div>
+          </div>
+
+          <!-- Chart D -->
+          <div class="p-5 rounded-3xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] space-y-2">
+            <span class="text-xs font-bold text-blue-400 uppercase tracking-wider">Chart D</span>
+            <h3 class="text-sm font-bold text-[var(--foreground,#f8fafc)]">Department Performance &amp; Workload Comparison</h3>
+            <p class="text-xs text-[var(--muted-foreground,#94a3b8)]">Horizontal comparison of productivity score versus workload score by practice unit</p>
+            <div id="chart-d-container" class="h-64 w-full"></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Chart B -->
+          <div class="p-5 rounded-3xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] space-y-2">
+            <span class="text-xs font-bold text-blue-400 uppercase tracking-wider">Chart B</span>
+            <h3 class="text-sm font-bold text-[var(--foreground,#f8fafc)]">Workload vs Productivity Correlation</h3>
+            <p class="text-xs text-[var(--muted-foreground,#94a3b8)]">Scatter plot comparing individual workload against productivity score (colored by risk)</p>
+            <div id="chart-b-container" class="h-64 w-full"></div>
+          </div>
+
+          <!-- Chart C -->
+          <div class="p-5 rounded-3xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] space-y-2">
+            <span class="text-xs font-bold text-blue-400 uppercase tracking-wider">Chart C</span>
+            <h3 class="text-sm font-bold text-[var(--foreground,#f8fafc)]">Working Hours vs Productivity Output</h3>
+            <p class="text-xs text-[var(--muted-foreground,#94a3b8)]">Binned analysis revealing output plateau and decline when daily hours exceed 10 hrs/day</p>
+            <div id="chart-c-container" class="h-64 w-full"></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Chart E -->
+          <div class="p-5 rounded-3xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] space-y-2">
+            <span class="text-xs font-bold text-blue-400 uppercase tracking-wider">Chart E</span>
+            <h3 class="text-sm font-bold text-[var(--foreground,#f8fafc)]">Employee Risk Distribution</h3>
+            <p class="text-xs text-[var(--muted-foreground,#94a3b8)]">Donut distribution of Low, Medium, and High workload risk</p>
+            <div id="chart-e-container" class="h-56 w-full flex items-center justify-center"></div>
+          </div>
+
+          <!-- Chart F -->
+          <div class="lg:col-span-2 p-5 rounded-3xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] space-y-2">
+            <span class="text-xs font-bold text-blue-400 uppercase tracking-wider">Chart F</span>
+            <h3 class="text-sm font-bold text-[var(--foreground,#f8fafc)]">Engagement vs Overtime Correlation</h3>
+            <p class="text-xs text-[var(--muted-foreground,#94a3b8)]">Scatter analysis showing sentiment erosion associated with persistent weekly overtime</p>
+            <div id="chart-f-container" class="h-56 w-full"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: EMPLOYEE INSIGHTS -->
+      <div id="tab-employees" class="tab-content space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 class="text-lg font-bold text-[var(--foreground,#f8fafc)]">Employee Intelligence Directory</h2>
+            <p class="text-xs text-[var(--muted-foreground,#94a3b8)]">Searchable, sortable, paginated enterprise directory with click-to-inspect factor breakdowns.</p>
+          </div>
+          <button id="table-export-csv-btn" class="px-3.5 py-2 rounded-xl bg-blue-600 text-white font-semibold text-xs shadow-sm hover:bg-blue-700 transition">
+            Export Active Records to CSV
+          </button>
+        </div>
+
+        <!-- Table Container -->
+        <div class="bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] rounded-3xl overflow-hidden shadow-sm">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-[var(--background,#0f172a)]/60 border-b border-[var(--border,#334155)] text-[var(--muted-foreground,#94a3b8)] uppercase text-[11px] font-bold">
+                  <th onclick="sortTable('Employee ID')" class="py-3 px-3.5 cursor-pointer hover:text-blue-400 select-none">ID ↕</th>
+                  <th onclick="sortTable('Employee Name')" class="py-3 px-3.5 cursor-pointer hover:text-blue-400 select-none">Employee ↕</th>
+                  <th onclick="sortTable('Department')" class="py-3 px-3.5 cursor-pointer hover:text-blue-400 select-none">Department ↕</th>
+                  <th onclick="sortTable('Productivity Score')" class="py-3 px-3.5 text-right cursor-pointer hover:text-blue-400 select-none">Productivity ↕</th>
+                  <th onclick="sortTable('Workload Score')" class="py-3 px-3.5 text-right cursor-pointer hover:text-blue-400 select-none">Workload ↕</th>
+                  <th onclick="sortTable('Overtime Hours Per Week')" class="py-3 px-3.5 text-right cursor-pointer hover:text-blue-400 select-none">Overtime ↕</th>
+                  <th onclick="sortTable('Employee Engagement Score')" class="py-3 px-3.5 text-right cursor-pointer hover:text-blue-400 select-none">Engagement ↕</th>
+                  <th onclick="sortTable('Task Completion Rate')" class="py-3 px-3.5 text-right cursor-pointer hover:text-blue-400 select-none">Completion ↕</th>
+                  <th onclick="sortTable('Risk Level')" class="py-3 px-3.5 text-center cursor-pointer hover:text-blue-400 select-none">Risk ↕</th>
+                  <th class="py-3 px-3.5 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="employee-table-body" class="divide-y divide-[var(--border,#334155)] text-[var(--foreground,#f8fafc)]">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Bar -->
+          <div class="p-4 px-6 border-t border-[var(--border,#334155)] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[var(--muted-foreground,#94a3b8)]">
+            <div class="flex items-center space-x-2">
+              <span>Show</span>
+              <select id="page-size-select" class="py-1 px-2 rounded-lg bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-[var(--foreground,#f8fafc)]">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+              </select>
+              <span>per page</span>
+              <span id="pagination-info" class="ml-2 font-medium"></span>
+            </div>
+            <div class="flex items-center space-x-1.5">
+              <button id="prev-page-btn" class="px-3 py-1.5 rounded-lg border border-[var(--border,#334155)] hover:bg-[var(--background,#0f172a)] transition">Previous</button>
+              <span id="page-number-display" class="px-2 font-bold text-[var(--foreground,#f8fafc)]">1</span>
+              <button id="next-page-btn" class="px-3 py-1.5 rounded-lg border border-[var(--border,#334155)] hover:bg-[var(--background,#0f172a)] transition">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: WORKLOAD RISKS -->
+      <div id="tab-risks" class="tab-content space-y-6">
+        <div>
+          <h2 class="text-lg font-bold text-[var(--foreground,#f8fafc)]">AI Workload Intelligence &amp; Prioritized Interventions</h2>
+          <p class="text-xs text-[var(--muted-foreground,#94a3b8)]">Dynamic algorithmic diagnoses identifying operational bottlenecks, overtime fatigue decoupling, and capacity disparity.</p>
+        </div>
+
+        <!-- Governance Framework Note -->
+        <div class="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-xs text-blue-300 space-y-1">
+          <div class="font-bold text-[var(--foreground,#f8fafc)] flex items-center space-x-2">
+            <span>🛡️ Ethical Governance Guardrails</span>
+          </div>
+          <p class="leading-relaxed">
+            Workload Risk scores represent <strong>operational system bottlenecks and workload distribution pressures</strong>. They are strictly designed to trigger managerial re-balancing, sprint scope adjustments, and wellness support. Under Infosys governance policies, this index is <strong>never</strong> a diagnostic assessment of employee capability, motivation, or medical health, and is <strong>never</strong> used for punitive disciplinary actions.
+          </p>
+        </div>
+
+        <!-- Dynamic Recommendations Cards -->
+        <div id="recommendations-container" class="space-y-4"></div>
+
+        <!-- Department Risk Ranking Table -->
+        <div class="p-5 rounded-3xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] space-y-3">
+          <h3 class="text-sm font-bold text-[var(--foreground,#f8fafc)]">Departmental Risk &amp; Workload Saturation Ranking</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-[var(--background,#0f172a)] border-b border-[var(--border,#334155)] text-[var(--muted-foreground,#94a3b8)] font-bold text-[11px] uppercase">
+                  <th class="py-2.5 px-3">Department</th>
+                  <th class="py-2.5 px-3 text-right">Headcount</th>
+                  <th class="py-2.5 px-3 text-right">High Risk Count</th>
+                  <th class="py-2.5 px-3 text-right">Risk Ratio</th>
+                  <th class="py-2.5 px-3 text-right">Avg Workload</th>
+                  <th class="py-2.5 px-3 text-right">Avg Overtime</th>
+                </tr>
+              </thead>
+              <tbody id="dept-risk-tbody" class="divide-y divide-[var(--border,#334155)]"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: DATA MANAGEMENT -->
+      <div id="tab-data" class="tab-content space-y-6">
+        <div>
+          <h2 class="text-lg font-bold text-[var(--foreground,#f8fafc)]">Data Management &amp; Enterprise Dictionary</h2>
+          <p class="text-xs text-[var(--muted-foreground,#94a3b8)]">Inspect dataset specifications, definitions, calculation formulas, and export data files.</p>
+        </div>
+
+        <!-- Download Buttons -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+          <div class="p-4 rounded-2xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] space-y-2">
+            <h4 class="font-bold text-[var(--foreground,#f8fafc)]">Download Synthetic Excel</h4>
+            <p class="text-[var(--muted-foreground,#94a3b8)]">Export the 4-sheet enterprise workbook (.xlsx) directly from the project directory.</p>
+            <a href="data/employee_productivity_synthetic.xlsx" download="employee_productivity_synthetic.xlsx" class="inline-block px-3 py-1.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">
+              Download .xlsx File
+            </a>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] space-y-2">
+            <h4 class="font-bold text-[var(--foreground,#f8fafc)]">Export Filtered CSV</h4>
+            <p class="text-[var(--muted-foreground,#94a3b8)]">Download currently filtered employee records as standard CSV for offline spreadsheets.</p>
+            <button id="btn-export-csv-data-tab" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition">
+              Export Filtered CSV
+            </button>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] space-y-2">
+            <h4 class="font-bold text-[var(--foreground,#f8fafc)]">Reset Baseline Seed</h4>
+            <p class="text-[var(--muted-foreground,#94a3b8)]">Resets any filters and re-aligns calculations to the reproducible Seed 42 dataset.</p>
+            <button onclick="resetToDefaultData()" class="px-3 py-1.5 rounded-lg bg-purple-600 text-white font-semibold hover:bg-purple-700 transition">
+              Reset Baseline Data
+            </button>
+          </div>
+        </div>
+
+        <!-- Data Dictionary Table -->
+        <div class="p-5 rounded-3xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] space-y-3">
+          <h3 class="text-sm font-bold text-[var(--foreground,#f8fafc)]">Sheet 4: Enterprise Data Dictionary (All 20 Metrics)</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="bg-[var(--background,#0f172a)] border-b border-[var(--border,#334155)] text-[var(--muted-foreground,#94a3b8)] font-bold text-[11px] uppercase">
+                  <th class="py-2.5 px-3">Column Name</th>
+                  <th class="py-2.5 px-3">Data Type</th>
+                  <th class="py-2.5 px-3">Score / Value Range</th>
+                  <th class="py-2.5 px-3">Definition</th>
+                  <th class="py-2.5 px-3">Formula / Derivation</th>
+                </tr>
+              </thead>
+              <tbody id="dictionary-tbody" class="divide-y divide-[var(--border,#334155)] text-[var(--foreground,#f8fafc)]">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Employee Detail Modal -->
+  <div id="employee-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] rounded-3xl max-w-2xl w-full p-6 space-y-5 shadow-2xl overflow-y-auto max-h-[90vh]">
+      <div class="flex items-start justify-between pb-3 border-b border-[var(--border,#334155)]">
+        <div>
+          <div class="flex items-center space-x-2">
+            <h3 id="modal-emp-name" class="text-base font-bold text-[var(--foreground,#f8fafc)]"></h3>
+            <span id="modal-emp-id" class="px-2 py-0.5 rounded text-xs font-mono bg-[var(--background,#0f172a)] text-[var(--muted-foreground,#94a3b8)]"></span>
+            <span id="modal-emp-risk" class="px-2.5 py-0.5 rounded-full text-xs font-bold"></span>
+          </div>
+          <p id="modal-emp-role" class="text-xs text-[var(--muted-foreground,#94a3b8)] mt-0.5"></p>
+        </div>
+        <button onclick="closeModal()" class="text-lg font-bold text-[var(--muted-foreground,#94a3b8)] hover:text-white px-2">✕</button>
+      </div>
+
+      <!-- Quick stats -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+        <div class="p-3 rounded-xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)]">
+          <span class="text-[var(--muted-foreground,#94a3b8)] block text-[11px]">Productivity</span>
+          <span id="modal-prod" class="text-base font-bold text-[var(--foreground,#f8fafc)]"></span>
+        </div>
+        <div class="p-3 rounded-xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)]">
+          <span class="text-[var(--muted-foreground,#94a3b8)] block text-[11px]">Workload Score</span>
+          <span id="modal-wl" class="text-base font-bold text-[var(--foreground,#f8fafc)]"></span>
+        </div>
+        <div class="p-3 rounded-xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)]">
+          <span class="text-[var(--muted-foreground,#94a3b8)] block text-[11px]">Weekly Overtime</span>
+          <span id="modal-ot" class="text-base font-bold text-[var(--foreground,#f8fafc)]"></span>
+        </div>
+        <div class="p-3 rounded-xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)]">
+          <span class="text-[var(--muted-foreground,#94a3b8)] block text-[11px]">Engagement</span>
+          <span id="modal-eng" class="text-base font-bold text-[var(--foreground,#f8fafc)]"></span>
+        </div>
+      </div>
+
+      <!-- Risk Scoring Factor Breakdown -->
+      <div class="p-4 rounded-2xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] space-y-2.5 text-xs">
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-[var(--foreground,#f8fafc)]">Workload Risk Factor Breakdown (Formula Weights)</span>
+          <span id="modal-composite-score" class="font-bold text-blue-400"></span>
+        </div>
+        <div id="modal-factors-list" class="space-y-2 pt-1"></div>
+      </div>
+
+      <!-- Recommended Action -->
+      <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 space-y-1">
+        <span class="font-bold text-amber-200 block">Recommended Workload Support Action:</span>
+        <p id="modal-action" class="leading-relaxed"></p>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button onclick="closeModal()" class="px-4 py-1.5 rounded-xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] text-xs font-semibold hover:border-slate-400">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Raw Embedded JSON Dataset -->
+  <script>
+    const INITIAL_DATASET = {"metadata":{"version":"1.0.0","context":"Infosys (Illustrative Synthetic Dataset - Not real personal data)","reportingMonth":"2026-10","recordCount":200,"generatedAt":"2026-10-28"},"employees":[{"Employee ID":"INF-1001","Employee Name":"Shalini Patel","Department":"Cloud & Infrastructure","Job Role":"Systems Architect","Team":"CloudOps Beta","Manager":"Rajeshwar Rao","Experience Years":3.4,"Assigned Tasks":46,"Completed Tasks":20,"Pending Tasks":26,"Average Working Hours Per Day":10.9,"Overtime Hours Per Week":19.1,"Absence Days":7,"Employee Engagement Score":40.9,"Performance Score":38.5,"Task Completion Rate":43.5,"Workload Score":92.8,"Productivity Score":42.8,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1002","Employee Name":"Snehal Rao","Department":"Data & AI","Job Role":"Machine Learning Specialist","Team":"BI Modernization","Manager":"Swati Bhasin","Experience Years":5.7,"Assigned Tasks":22,"Completed Tasks":11,"Pending Tasks":11,"Average Working Hours Per Day":7.3,"Overtime Hours Per Week":1.3,"Absence Days":4,"Employee Engagement Score":61.1,"Performance Score":48.6,"Task Completion Rate":50,"Workload Score":46.7,"Productivity Score":52.8,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1003","Employee Name":"Kiran Shetty","Department":"Enterprise Application Services","Job Role":"SAP/ERP Consultant","Team":"Integration Nexus","Manager":"Rohan Nambisan","Experience Years":3.1,"Assigned Tasks":32,"Completed Tasks":28,"Pending Tasks":4,"Average Working Hours Per Day":9.6,"Overtime Hours Per Week":15.7,"Absence Days":2,"Employee Engagement Score":52.7,"Performance Score":68,"Task Completion Rate":87.5,"Workload Score":83.2,"Productivity Score":87.1,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1004","Employee Name":"Lakshmi Nair","Department":"Enterprise Application Services","Job Role":"Integration Architect","Team":"Salesforce Cloud Pod","Manager":"Gautam Subramanian","Experience Years":5.5,"Assigned Tasks":29,"Completed Tasks":16,"Pending Tasks":13,"Average Working Hours Per Day":7.7,"Overtime Hours Per Week":0.5,"Absence Days":4,"Employee Engagement Score":50.2,"Performance Score":49,"Task Completion Rate":55.2,"Workload Score":44.3,"Productivity Score":54.4,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1005","Employee Name":"Simran Bose","Department":"Quality Engineering","Job Role":"Automation Test Specialist","Team":"Performance Guild","Manager":"Arunachalam Murthy","Experience Years":14.7,"Assigned Tasks":54,"Completed Tasks":42,"Pending Tasks":12,"Average Working Hours Per Day":9.1,"Overtime Hours Per Week":4.4,"Absence Days":3,"Employee Engagement Score":88.1,"Performance Score":77.6,"Task Completion Rate":77.8,"Workload Score":53.5,"Productivity Score":83.7,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1006","Employee Name":"Ashwin Mukherjee","Department":"Engineering Services","Job Role":"Technical Architect","Team":"PLM Modernization","Manager":"Pooja Hegde","Experience Years":10.9,"Assigned Tasks":26,"Completed Tasks":15,"Pending Tasks":11,"Average Working Hours Per Day":7.4,"Overtime Hours Per Week":3,"Absence Days":2,"Employee Engagement Score":56.6,"Performance Score":49.7,"Task Completion Rate":57.7,"Workload Score":38.8,"Productivity Score":58.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1007","Employee Name":"Sangeeta Iyer","Department":"Data & AI","Job Role":"AI Research Associate","Team":"BI Modernization","Manager":"Rohan Nambisan","Experience Years":5.3,"Assigned Tasks":49,"Completed Tasks":43,"Pending Tasks":6,"Average Working Hours Per Day":8.8,"Overtime Hours Per Week":1.7,"Absence Days":2,"Employee Engagement Score":90.4,"Performance Score":81.6,"Task Completion Rate":87.8,"Workload Score":73.7,"Productivity Score":91.5,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1008","Employee Name":"Tanvi Mishra","Department":"Engineering Services","Job Role":"IoT Systems Engineer","Team":"Connected Devices Lab","Manager":"Rohan Nambisan","Experience Years":16.5,"Assigned Tasks":20,"Completed Tasks":11,"Pending Tasks":9,"Average Working Hours Per Day":7.8,"Overtime Hours Per Week":1.8,"Absence Days":6,"Employee Engagement Score":43.6,"Performance Score":48.5,"Task Completion Rate":55,"Workload Score":36.6,"Productivity Score":56.7,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1009","Employee Name":"Arjun Pandey","Department":"Enterprise Application Services","Job Role":"Integration Architect","Team":"Salesforce Cloud Pod","Manager":"Arunachalam Murthy","Experience Years":5.1,"Assigned Tasks":49,"Completed Tasks":44,"Pending Tasks":5,"Average Working Hours Per Day":8.9,"Overtime Hours Per Week":5.9,"Absence Days":3,"Employee Engagement Score":77.6,"Performance Score":76.4,"Task Completion Rate":89.8,"Workload Score":53.8,"Productivity Score":91.8,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1010","Employee Name":"Sangeeta Choudhury","Department":"Digital Experience","Job Role":"Solutions Consultant","Team":"Retail Digital Studio","Manager":"Pooja Hegde","Experience Years":6.3,"Assigned Tasks":19,"Completed Tasks":10,"Pending Tasks":9,"Average Working Hours Per Day":7.6,"Overtime Hours Per Week":1.6,"Absence Days":2,"Employee Engagement Score":41.4,"Performance Score":43.6,"Task Completion Rate":52.6,"Workload Score":44.3,"Productivity Score":54.5,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1011","Employee Name":"Anand Agarwal","Department":"Engineering Services","Job Role":"Embedded Software Engineer","Team":"Connected Devices Lab","Manager":"Priya Venkatesh","Experience Years":16.4,"Assigned Tasks":21,"Completed Tasks":12,"Pending Tasks":9,"Average Working Hours Per Day":7.4,"Overtime Hours Per Week":2,"Absence Days":6,"Employee Engagement Score":55.9,"Performance Score":50.7,"Task Completion Rate":57.1,"Workload Score":31.6,"Productivity Score":59.7,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1012","Employee Name":"Manoj Kulkarni","Department":"Cloud & Infrastructure","Job Role":"Cloud Operations Engineer","Team":"SRE Velocity","Manager":"Vikramaditya Sengupta","Experience Years":8.2,"Assigned Tasks":35,"Completed Tasks":27,"Pending Tasks":8,"Average Working Hours Per Day":8.8,"Overtime Hours Per Week":6.9,"Absence Days":0,"Employee Engagement Score":89.6,"Performance Score":71.3,"Task Completion Rate":77.1,"Workload Score":68.8,"Productivity Score":79.1,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1013","Employee Name":"Neha Nair","Department":"Enterprise Application Services","Job Role":"Enterprise Solution Lead","Team":"Salesforce Cloud Pod","Manager":"Priya Venkatesh","Experience Years":8.5,"Assigned Tasks":31,"Completed Tasks":15,"Pending Tasks":16,"Average Working Hours Per Day":7.2,"Overtime Hours Per Week":3,"Absence Days":3,"Employee Engagement Score":42.1,"Performance Score":43.1,"Task Completion Rate":48.4,"Workload Score":42.1,"Productivity Score":50.3,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1014","Employee Name":"Meera Mishra","Department":"Cloud & Infrastructure","Job Role":"DevOps Specialist","Team":"SRE Velocity","Manager":"Arunachalam Murthy","Experience Years":17.8,"Assigned Tasks":55,"Completed Tasks":54,"Pending Tasks":1,"Average Working Hours Per Day":8.5,"Overtime Hours Per Week":3.5,"Absence Days":3,"Employee Engagement Score":86.1,"Performance Score":82.2,"Task Completion Rate":98.2,"Workload Score":70,"Productivity Score":95.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1015","Employee Name":"Sameer Mehta","Department":"Cyber Security","Job Role":"Security Operations Analyst","Team":"ZeroTrust Identity","Manager":"Arunachalam Murthy","Experience Years":1.9,"Assigned Tasks":48,"Completed Tasks":35,"Pending Tasks":13,"Average Working Hours Per Day":8.6,"Overtime Hours Per Week":1.3,"Absence Days":0,"Employee Engagement Score":78.7,"Performance Score":69.2,"Task Completion Rate":72.9,"Workload Score":73.1,"Productivity Score":79.4,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1016","Employee Name":"Abhishek Hegde","Department":"Digital Experience","Job Role":"Solutions Consultant","Team":"FinTech Experience","Manager":"Swati Bhasin","Experience Years":2.4,"Assigned Tasks":35,"Completed Tasks":25,"Pending Tasks":10,"Average Working Hours Per Day":8.3,"Overtime Hours Per Week":1.6,"Absence Days":3,"Employee Engagement Score":67.1,"Performance Score":64.6,"Task Completion Rate":71.4,"Workload Score":62.4,"Productivity Score":68.3,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1017","Employee Name":"Aarav Bhattacharya","Department":"Cyber Security","Job Role":"Compliance Lead","Team":"CyberShield SOC","Manager":"Priya Venkatesh","Experience Years":10.1,"Assigned Tasks":39,"Completed Tasks":33,"Pending Tasks":6,"Average Working Hours Per Day":8.4,"Overtime Hours Per Week":1.4,"Absence Days":2,"Employee Engagement Score":78.2,"Performance Score":78.5,"Task Completion Rate":84.6,"Workload Score":55,"Productivity Score":84.7,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1018","Employee Name":"Aarav Naidu","Department":"Quality Engineering","Job Role":"Continuous Testing Architect","Team":"Continuous Quality Pod","Manager":"Gautam Subramanian","Experience Years":2.8,"Assigned Tasks":20,"Completed Tasks":10,"Pending Tasks":10,"Average Working Hours Per Day":8,"Overtime Hours Per Week":2.2,"Absence Days":4,"Employee Engagement Score":53.3,"Performance Score":50.1,"Task Completion Rate":50,"Workload Score":35.8,"Productivity Score":54.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1019","Employee Name":"Prerna Chatterjee","Department":"Quality Engineering","Job Role":"Automation Test Specialist","Team":"Automation Matrix","Manager":"Gautam Subramanian","Experience Years":8.2,"Assigned Tasks":40,"Completed Tasks":34,"Pending Tasks":6,"Average Working Hours Per Day":8.9,"Overtime Hours Per Week":4.8,"Absence Days":3,"Employee Engagement Score":83.8,"Performance Score":70.4,"Task Completion Rate":85,"Workload Score":52.1,"Productivity Score":80.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1020","Employee Name":"Snehal Mishra","Department":"Digital Experience","Job Role":"Solutions Consultant","Team":"FinTech Experience","Manager":"Vikramaditya Sengupta","Experience Years":10.9,"Assigned Tasks":70,"Completed Tasks":43,"Pending Tasks":27,"Average Working Hours Per Day":10.3,"Overtime Hours Per Week":22.8,"Absence Days":5,"Employee Engagement Score":36.1,"Performance Score":50.8,"Task Completion Rate":61.4,"Workload Score":80.5,"Productivity Score":67.3,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1021","Employee Name":"Varun Rao","Department":"Quality Engineering","Job Role":"Quality Assurance Analyst","Team":"Performance Guild","Manager":"Rajeshwar Rao","Experience Years":15.7,"Assigned Tasks":29,"Completed Tasks":20,"Pending Tasks":9,"Average Working Hours Per Day":8,"Overtime Hours Per Week":0.1,"Absence Days":5,"Employee Engagement Score":57.2,"Performance Score":60.5,"Task Completion Rate":69,"Workload Score":47.8,"Productivity Score":66.6,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1022","Employee Name":"Isha Nair","Department":"Quality Engineering","Job Role":"Automation Test Specialist","Team":"API Test Labs","Manager":"Arunachalam Murthy","Experience Years":15.6,"Assigned Tasks":39,"Completed Tasks":33,"Pending Tasks":6,"Average Working Hours Per Day":8.6,"Overtime Hours Per Week":2.8,"Absence Days":3,"Employee Engagement Score":88.2,"Performance Score":78.3,"Task Completion Rate":84.6,"Workload Score":70.8,"Productivity Score":82,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1023","Employee Name":"Isha Menon","Department":"Engineering Services","Job Role":"Technical Architect","Team":"AutoTech Systems","Manager":"Gautam Subramanian","Experience Years":17.7,"Assigned Tasks":37,"Completed Tasks":33,"Pending Tasks":4,"Average Working Hours Per Day":8.1,"Overtime Hours Per Week":6.8,"Absence Days":0,"Employee Engagement Score":94.7,"Performance Score":80.7,"Task Completion Rate":89.2,"Workload Score":73.6,"Productivity Score":88.5,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1024","Employee Name":"Karthik Choudhury","Department":"Cyber Security","Job Role":"Compliance Lead","Team":"CyberShield SOC","Manager":"Deepak Nambiar","Experience Years":16.3,"Assigned Tasks":70,"Completed Tasks":38,"Pending Tasks":32,"Average Working Hours Per Day":10.6,"Overtime Hours Per Week":18.2,"Absence Days":8,"Employee Engagement Score":54.4,"Performance Score":47.6,"Task Completion Rate":54.3,"Workload Score":78.9,"Productivity Score":56,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1025","Employee Name":"Siddharth Pandey","Department":"Enterprise Application Services","Job Role":"Technical Consultant","Team":"Oracle ERP Services","Manager":"Gautam Subramanian","Experience Years":15.4,"Assigned Tasks":37,"Completed Tasks":28,"Pending Tasks":9,"Average Working Hours Per Day":8.2,"Overtime Hours Per Week":2.5,"Absence Days":2,"Employee Engagement Score":70,"Performance Score":69.6,"Task Completion Rate":75.7,"Workload Score":56.6,"Productivity Score":74.8,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1026","Employee Name":"Bhavik Nair","Department":"Cyber Security","Job Role":"Compliance Lead","Team":"ZeroTrust Identity","Manager":"Deepak Nambiar","Experience Years":10.3,"Assigned Tasks":65,"Completed Tasks":34,"Pending Tasks":31,"Average Working Hours Per Day":10.6,"Overtime Hours Per Week":19,"Absence Days":8,"Employee Engagement Score":46.9,"Performance Score":44.3,"Task Completion Rate":52.3,"Workload Score":83.7,"Productivity Score":50.4,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1027","Employee Name":"Vidya Mehta","Department":"Digital Experience","Job Role":"Frontend UI/UX Specialist","Team":"OmniChannel Portal","Manager":"Rohan Nambisan","Experience Years":12.3,"Assigned Tasks":34,"Completed Tasks":16,"Pending Tasks":18,"Average Working Hours Per Day":7.8,"Overtime Hours Per Week":0,"Absence Days":1,"Employee Engagement Score":63.6,"Performance Score":49.7,"Task Completion Rate":47.1,"Workload Score":69.6,"Productivity Score":47.2,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1028","Employee Name":"Suresh Agarwal","Department":"Data & AI","Job Role":"AI Research Associate","Team":"BI Modernization","Manager":"Rajeshwar Rao","Experience Years":3.5,"Assigned Tasks":38,"Completed Tasks":35,"Pending Tasks":3,"Average Working Hours Per Day":10.2,"Overtime Hours Per Week":19.1,"Absence Days":4,"Employee Engagement Score":74.5,"Performance Score":82.5,"Task Completion Rate":92.1,"Workload Score":90,"Productivity Score":92.2,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1029","Employee Name":"Umesh Mishra","Department":"Data & AI","Job Role":"Data Architect","Team":"BI Modernization","Manager":"Rohan Nambisan","Experience Years":8.6,"Assigned Tasks":71,"Completed Tasks":40,"Pending Tasks":31,"Average Working Hours Per Day":10.6,"Overtime Hours Per Week":21,"Absence Days":7,"Employee Engagement Score":55.7,"Performance Score":49.9,"Task Completion Rate":56.3,"Workload Score":95.2,"Productivity Score":58.6,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1030","Employee Name":"Suresh Gupta","Department":"Digital Experience","Job Role":"Experience Architect","Team":"OmniChannel Portal","Manager":"Vikramaditya Sengupta","Experience Years":16.2,"Assigned Tasks":51,"Completed Tasks":23,"Pending Tasks":28,"Average Working Hours Per Day":10.5,"Overtime Hours Per Week":13.8,"Absence Days":7,"Employee Engagement Score":46,"Performance Score":36.4,"Task Completion Rate":45.1,"Workload Score":81,"Productivity Score":43.7,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1031","Employee Name":"Manish Mishra","Department":"Quality Engineering","Job Role":"Continuous Testing Architect","Team":"Automation Matrix","Manager":"Swati Bhasin","Experience Years":7.5,"Assigned Tasks":75,"Completed Tasks":45,"Pending Tasks":30,"Average Working Hours Per Day":11.4,"Overtime Hours Per Week":22.2,"Absence Days":8,"Employee Engagement Score":49.5,"Performance Score":54.6,"Task Completion Rate":60,"Workload Score":85,"Productivity Score":63.7,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1032","Employee Name":"Gaurav Chatterjee","Department":"Data & AI","Job Role":"AI Research Associate","Team":"Predictive Analytics Pod","Manager":"Deepak Nambiar","Experience Years":6.7,"Assigned Tasks":29,"Completed Tasks":21,"Pending Tasks":8,"Average Working Hours Per Day":8.1,"Overtime Hours Per Week":2.8,"Absence Days":4,"Employee Engagement Score":69.6,"Performance Score":69.9,"Task Completion Rate":72.4,"Workload Score":58.9,"Productivity Score":78.7,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1033","Employee Name":"Neha Reddy","Department":"Quality Engineering","Job Role":"Quality Assurance Analyst","Team":"Performance Guild","Manager":"Arunachalam Murthy","Experience Years":5.4,"Assigned Tasks":40,"Completed Tasks":37,"Pending Tasks":3,"Average Working Hours Per Day":8.4,"Overtime Hours Per Week":6.3,"Absence Days":2,"Employee Engagement Score":91.6,"Performance Score":82.1,"Task Completion Rate":92.5,"Workload Score":62.5,"Productivity Score":91.5,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1034","Employee Name":"Amrita Menon","Department":"Digital Experience","Job Role":"Frontend UI/UX Specialist","Team":"FinTech Experience","Manager":"Arunachalam Murthy","Experience Years":17.1,"Assigned Tasks":66,"Completed Tasks":27,"Pending Tasks":39,"Average Working Hours Per Day":9.9,"Overtime Hours Per Week":13.5,"Absence Days":6,"Employee Engagement Score":60.6,"Performance Score":46.5,"Task Completion Rate":40.9,"Workload Score":78.4,"Productivity Score":45,"Risk Level":"Medium","Reporting Month":"2026-10"},{"Employee ID":"INF-1035","Employee Name":"Sangeeta Mehta","Department":"Engineering Services","Job Role":"Embedded Software Engineer","Team":"Connected Devices Lab","Manager":"Sneha Kulkarni","Experience Years":2.8,"Assigned Tasks":57,"Completed Tasks":35,"Pending Tasks":22,"Average Working Hours Per Day":11.2,"Overtime Hours Per Week":23.5,"Absence Days":7,"Employee Engagement Score":40.4,"Performance Score":54.3,"Task Completion Rate":61.4,"Workload Score":84.2,"Productivity Score":66.5,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1036","Employee Name":"Varun Gupta","Department":"Quality Engineering","Job Role":"Continuous Testing Architect","Team":"Automation Matrix","Manager":"Swati Bhasin","Experience Years":14.3,"Assigned Tasks":42,"Completed Tasks":33,"Pending Tasks":9,"Average Working Hours Per Day":8.4,"Overtime Hours Per Week":4,"Absence Days":3,"Employee Engagement Score":83.4,"Performance Score":75.4,"Task Completion Rate":78.6,"Workload Score":61.9,"Productivity Score":78.2,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1037","Employee Name":"Vipul Bhattacharya","Department":"Engineering Services","Job Role":"Product Lifecycle Consultant","Team":"AutoTech Systems","Manager":"Kavita Sundaram","Experience Years":13.5,"Assigned Tasks":25,"Completed Tasks":15,"Pending Tasks":10,"Average Working Hours Per Day":7.9,"Overtime Hours Per Week":1.6,"Absence Days":6,"Employee Engagement Score":58.2,"Performance Score":55.3,"Task Completion Rate":60,"Workload Score":35.9,"Productivity Score":58.4,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1038","Employee Name":"Aniket Chatterjee","Department":"Data & AI","Job Role":"Machine Learning Specialist","Team":"BI Modernization","Manager":"Swati Bhasin","Experience Years":11.4,"Assigned Tasks":38,"Completed Tasks":30,"Pending Tasks":8,"Average Working Hours Per Day":9,"Overtime Hours Per Week":2.1,"Absence Days":2,"Employee Engagement Score":80.2,"Performance Score":76.5,"Task Completion Rate":78.9,"Workload Score":52.7,"Productivity Score":84.4,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1039","Employee Name":"Aarav Joshi","Department":"Digital Experience","Job Role":"Frontend UI/UX Specialist","Team":"Retail Digital Studio","Manager":"Pooja Hegde","Experience Years":7.9,"Assigned Tasks":46,"Completed Tasks":42,"Pending Tasks":4,"Average Working Hours Per Day":8.6,"Overtime Hours Per Week":5.3,"Absence Days":1,"Employee Engagement Score":76.9,"Performance Score":77.2,"Task Completion Rate":91.3,"Workload Score":57.5,"Productivity Score":92.3,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1040","Employee Name":"Lakshmi Deshpande","Department":"Cyber Security","Job Role":"Compliance Lead","Team":"ZeroTrust Identity","Manager":"Deepak Nambiar","Experience Years":17.9,"Assigned Tasks":39,"Completed Tasks":31,"Pending Tasks":8,"Average Working Hours Per Day":8.5,"Overtime Hours Per Week":2.8,"Absence Days":0,"Employee Engagement Score":78.9,"Performance Score":75.5,"Task Completion Rate":79.5,"Workload Score":60.1,"Productivity Score":80.2,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1041","Employee Name":"Dev Kulkarni","Department":"Engineering Services","Job Role":"Quality Lead","Team":"PLM Modernization","Manager":"Pooja Hegde","Experience Years":11,"Assigned Tasks":34,"Completed Tasks":21,"Pending Tasks":13,"Average Working Hours Per Day":8.8,"Overtime Hours Per Week":5,"Absence Days":1,"Employee Engagement Score":63.2,"Performance Score":57.1,"Task Completion Rate":61.8,"Workload Score":63.1,"Productivity Score":68.2,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1042","Employee Name":"Amrita Rao","Department":"Enterprise Application Services","Job Role":"CRM Specialist","Team":"Integration Nexus","Manager":"Priya Venkatesh","Experience Years":15.8,"Assigned Tasks":26,"Completed Tasks":16,"Pending Tasks":10,"Average Working Hours Per Day":8.4,"Overtime Hours Per Week":1.1,"Absence Days":1,"Employee Engagement Score":75.5,"Performance Score":62.6,"Task Completion Rate":61.5,"Workload Score":60.3,"Productivity Score":68.5,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1043","Employee Name":"Shalini Naidu","Department":"Cloud & Infrastructure","Job Role":"DevOps Specialist","Team":"CloudOps Beta","Manager":"Swati Bhasin","Experience Years":17.1,"Assigned Tasks":64,"Completed Tasks":38,"Pending Tasks":26,"Average Working Hours Per Day":10.9,"Overtime Hours Per Week":17,"Absence Days":7,"Employee Engagement Score":41.1,"Performance Score":54.2,"Task Completion Rate":59.4,"Workload Score":83,"Productivity Score":62.6,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1044","Employee Name":"Sameer Choudhury","Department":"Enterprise Application Services","Job Role":"Technical Consultant","Team":"SAP Core Modernization","Manager":"Swati Bhasin","Experience Years":17.3,"Assigned Tasks":47,"Completed Tasks":22,"Pending Tasks":25,"Average Working Hours Per Day":11.1,"Overtime Hours Per Week":15.2,"Absence Days":3,"Employee Engagement Score":39.7,"Performance Score":39.2,"Task Completion Rate":46.8,"Workload Score":93.3,"Productivity Score":46.1,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1045","Employee Name":"Pranav Gupta","Department":"Cloud & Infrastructure","Job Role":"DevOps Specialist","Team":"Hybrid Platform Team","Manager":"Pooja Hegde","Experience Years":5.8,"Assigned Tasks":30,"Completed Tasks":18,"Pending Tasks":12,"Average Working Hours Per Day":7.4,"Overtime Hours Per Week":0.8,"Absence Days":3,"Employee Engagement Score":54.5,"Performance Score":53.8,"Task Completion Rate":60,"Workload Score":31.6,"Productivity Score":61.3,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1046","Employee Name":"Chetan Chatterjee","Department":"Quality Engineering","Job Role":"Performance Engineering Analyst","Team":"Automation Matrix","Manager":"Arunachalam Murthy","Experience Years":3.8,"Assigned Tasks":35,"Completed Tasks":29,"Pending Tasks":6,"Average Working Hours Per Day":8.7,"Overtime Hours Per Week":2.7,"Absence Days":3,"Employee Engagement Score":81.1,"Performance Score":76.4,"Task Completion Rate":82.9,"Workload Score":69.2,"Productivity Score":86.4,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1047","Employee Name":"Aniket Shetty","Department":"Cloud & Infrastructure","Job Role":"Site Reliability Engineer","Team":"Hybrid Platform Team","Manager":"Swati Bhasin","Experience Years":5.3,"Assigned Tasks":75,"Completed Tasks":32,"Pending Tasks":43,"Average Working Hours Per Day":11.6,"Overtime Hours Per Week":18.9,"Absence Days":9,"Employee Engagement Score":55.6,"Performance Score":37.8,"Task Completion Rate":42.7,"Workload Score":97.2,"Productivity Score":42.5,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1048","Employee Name":"Pranav Joshi","Department":"Engineering Services","Job Role":"Quality Lead","Team":"PLM Modernization","Manager":"Kavita Sundaram","Experience Years":17.9,"Assigned Tasks":45,"Completed Tasks":36,"Pending Tasks":9,"Average Working Hours Per Day":9.2,"Overtime Hours Per Week":3.8,"Absence Days":1,"Employee Engagement Score":88.4,"Performance Score":78.2,"Task Completion Rate":80,"Workload Score":70.7,"Productivity Score":84,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1049","Employee Name":"Meera Bansal","Department":"Quality Engineering","Job Role":"Continuous Testing Architect","Team":"Automation Matrix","Manager":"Ananya Deshmukh","Experience Years":2.5,"Assigned Tasks":32,"Completed Tasks":13,"Pending Tasks":19,"Average Working Hours Per Day":7.8,"Overtime Hours Per Week":0,"Absence Days":3,"Employee Engagement Score":85.9,"Performance Score":46.5,"Task Completion Rate":40.6,"Workload Score":69.4,"Productivity Score":44,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1050","Employee Name":"Ashwin Pandey","Department":"Enterprise Application Services","Job Role":"Enterprise Solution Lead","Team":"Integration Nexus","Manager":"Priya Venkatesh","Experience Years":1.5,"Assigned Tasks":25,"Completed Tasks":19,"Pending Tasks":6,"Average Working Hours Per Day":8.6,"Overtime Hours Per Week":1.9,"Absence Days":1,"Employee Engagement Score":61.7,"Performance Score":59.6,"Task Completion Rate":76,"Workload Score":67.6,"Productivity Score":72.7,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1051","Employee Name":"Prerna Pandey","Department":"Engineering Services","Job Role":"IoT Systems Engineer","Team":"PLM Modernization","Manager":"Deepak Nambiar","Experience Years":15.2,"Assigned Tasks":32,"Completed Tasks":20,"Pending Tasks":12,"Average Working Hours Per Day":7.7,"Overtime Hours Per Week":1.2,"Absence Days":3,"Employee Engagement Score":56.4,"Performance Score":51.8,"Task Completion Rate":62.5,"Workload Score":35.4,"Productivity Score":60.8,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1052","Employee Name":"Manoj Bose","Department":"Quality Engineering","Job Role":"Continuous Testing Architect","Team":"Continuous Quality Pod","Manager":"Arunachalam Murthy","Experience Years":5.8,"Assigned Tasks":36,"Completed Tasks":30,"Pending Tasks":6,"Average Working Hours Per Day":9.2,"Overtime Hours Per Week":3.9,"Absence Days":2,"Employee Engagement Score":84.7,"Performance Score":77.4,"Task Completion Rate":83.3,"Workload Score":65.5,"Productivity Score":86,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1053","Employee Name":"Karthik Saxena","Department":"Digital Experience","Job Role":"Full Stack Developer","Team":"UI Platform Guild","Manager":"Rajeshwar Rao","Experience Years":15.6,"Assigned Tasks":44,"Completed Tasks":36,"Pending Tasks":8,"Average Working Hours Per Day":8.6,"Overtime Hours Per Week":6.5,"Absence Days":1,"Employee Engagement Score":88.3,"Performance Score":73.6,"Task Completion Rate":81.8,"Workload Score":59.3,"Productivity Score":84.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1054","Employee Name":"Sameer Bose","Department":"Quality Engineering","Job Role":"Automation Test Specialist","Team":"API Test Labs","Manager":"Priya Venkatesh","Experience Years":9.9,"Assigned Tasks":36,"Completed Tasks":28,"Pending Tasks":8,"Average Working Hours Per Day":8.5,"Overtime Hours Per Week":4.9,"Absence Days":2,"Employee Engagement Score":90.6,"Performance Score":75.7,"Task Completion Rate":77.8,"Workload Score":68.6,"Productivity Score":79.3,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1055","Employee Name":"Yash Bose","Department":"Quality Engineering","Job Role":"Continuous Testing Architect","Team":"API Test Labs","Manager":"Vikramaditya Sengupta","Experience Years":11.7,"Assigned Tasks":21,"Completed Tasks":12,"Pending Tasks":9,"Average Working Hours Per Day":7.7,"Overtime Hours Per Week":1.9,"Absence Days":3,"Employee Engagement Score":60.3,"Performance Score":54.5,"Task Completion Rate":57.1,"Workload Score":40.7,"Productivity Score":61.4,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1056","Employee Name":"Shalini Agarwal","Department":"Quality Engineering","Job Role":"Automation Test Specialist","Team":"API Test Labs","Manager":"Kavita Sundaram","Experience Years":12.8,"Assigned Tasks":23,"Completed Tasks":12,"Pending Tasks":11,"Average Working Hours Per Day":7.9,"Overtime Hours Per Week":0.9,"Absence Days":5,"Employee Engagement Score":45.4,"Performance Score":51.3,"Task Completion Rate":52.2,"Workload Score":31,"Productivity Score":57.8,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1057","Employee Name":"Zoya Pillai","Department":"Cyber Security","Job Role":"Vulnerability Assessment Specialist","Team":"SecOps Compliance","Manager":"Swati Bhasin","Experience Years":3.4,"Assigned Tasks":46,"Completed Tasks":19,"Pending Tasks":27,"Average Working Hours Per Day":8,"Overtime Hours Per Week":0,"Absence Days":1,"Employee Engagement Score":88.6,"Performance Score":50.7,"Task Completion Rate":41.3,"Workload Score":74.6,"Productivity Score":41.6,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1058","Employee Name":"Jyoti Kulkarni","Department":"Data & AI","Job Role":"AI Research Associate","Team":"Predictive Analytics Pod","Manager":"Rajeshwar Rao","Experience Years":7.5,"Assigned Tasks":53,"Completed Tasks":46,"Pending Tasks":7,"Average Working Hours Per Day":8.8,"Overtime Hours Per Week":1.1,"Absence Days":0,"Employee Engagement Score":75.2,"Performance Score":76.1,"Task Completion Rate":86.8,"Workload Score":58.8,"Productivity Score":85.1,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1059","Employee Name":"Bhavik Gupta","Department":"Quality Engineering","Job Role":"Performance Engineering Analyst","Team":"Continuous Quality Pod","Manager":"Rajeshwar Rao","Experience Years":11.8,"Assigned Tasks":29,"Completed Tasks":21,"Pending Tasks":8,"Average Working Hours Per Day":8.6,"Overtime Hours Per Week":4,"Absence Days":1,"Employee Engagement Score":76.3,"Performance Score":66.6,"Task Completion Rate":72.4,"Workload Score":64.9,"Productivity Score":73.8,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1060","Employee Name":"Tanvi Reddy","Department":"Cloud & Infrastructure","Job Role":"Systems Architect","Team":"Hybrid Platform Team","Manager":"Pooja Hegde","Experience Years":8.1,"Assigned Tasks":61,"Completed Tasks":42,"Pending Tasks":19,"Average Working Hours Per Day":11.7,"Overtime Hours Per Week":16.4,"Absence Days":5,"Employee Engagement Score":57.4,"Performance Score":60.7,"Task Completion Rate":68.9,"Workload Score":93.7,"Productivity Score":65.8,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1061","Employee Name":"Jayant Mehta","Department":"Quality Engineering","Job Role":"SDET Lead","Team":"Automation Matrix","Manager":"Ananya Deshmukh","Experience Years":17.4,"Assigned Tasks":57,"Completed Tasks":48,"Pending Tasks":9,"Average Working Hours Per Day":9.7,"Overtime Hours Per Week":15.6,"Absence Days":5,"Employee Engagement Score":56.7,"Performance Score":69.7,"Task Completion Rate":84.2,"Workload Score":91,"Productivity Score":88.3,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1062","Employee Name":"Shalini Menon","Department":"Cloud & Infrastructure","Job Role":"DevOps Specialist","Team":"SRE Velocity","Manager":"Arunachalam Murthy","Experience Years":11.5,"Assigned Tasks":28,"Completed Tasks":16,"Pending Tasks":12,"Average Working Hours Per Day":7.7,"Overtime Hours Per Week":1.9,"Absence Days":4,"Employee Engagement Score":60,"Performance Score":54.1,"Task Completion Rate":57.1,"Workload Score":37.2,"Productivity Score":64.8,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1063","Employee Name":"Akhil Gupta","Department":"Data & AI","Job Role":"Data Engineer","Team":"Predictive Analytics Pod","Manager":"Rajeshwar Rao","Experience Years":16.1,"Assigned Tasks":75,"Completed Tasks":38,"Pending Tasks":37,"Average Working Hours Per Day":11.2,"Overtime Hours Per Week":20.9,"Absence Days":8,"Employee Engagement Score":50.9,"Performance Score":48.4,"Task Completion Rate":50.7,"Workload Score":87.1,"Productivity Score":56,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1064","Employee Name":"Prerna Shetty","Department":"Data & AI","Job Role":"BI Analytics Consultant","Team":"Predictive Analytics Pod","Manager":"Pooja Hegde","Experience Years":7.3,"Assigned Tasks":53,"Completed Tasks":49,"Pending Tasks":4,"Average Working Hours Per Day":10.9,"Overtime Hours Per Week":19.8,"Absence Days":2,"Employee Engagement Score":93,"Performance Score":81,"Task Completion Rate":92.5,"Workload Score":83.1,"Productivity Score":92.4,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1065","Employee Name":"Aditi Verma","Department":"Quality Engineering","Job Role":"SDET Lead","Team":"Performance Guild","Manager":"Kavita Sundaram","Experience Years":14.4,"Assigned Tasks":71,"Completed Tasks":43,"Pending Tasks":28,"Average Working Hours Per Day":10.9,"Overtime Hours Per Week":19,"Absence Days":4,"Employee Engagement Score":43.9,"Performance Score":53.7,"Task Completion Rate":60.6,"Workload Score":94.6,"Productivity Score":64.6,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1066","Employee Name":"Bhavna Reddy","Department":"Cyber Security","Job Role":"Identity & Access Manager","Team":"Threat Intelligence Pod","Manager":"Priya Venkatesh","Experience Years":12.2,"Assigned Tasks":55,"Completed Tasks":24,"Pending Tasks":31,"Average Working Hours Per Day":11.5,"Overtime Hours Per Week":14.9,"Absence Days":4,"Employee Engagement Score":42.2,"Performance Score":38.3,"Task Completion Rate":43.6,"Workload Score":78.3,"Productivity Score":42.4,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1067","Employee Name":"Pranav Bhattacharya","Department":"Quality Engineering","Job Role":"SDET Lead","Team":"Automation Matrix","Manager":"Ananya Deshmukh","Experience Years":9.6,"Assigned Tasks":26,"Completed Tasks":21,"Pending Tasks":5,"Average Working Hours Per Day":10.5,"Overtime Hours Per Week":16.4,"Absence Days":2,"Employee Engagement Score":54.2,"Performance Score":68.2,"Task Completion Rate":80.8,"Workload Score":92.9,"Productivity Score":89.4,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1068","Employee Name":"Sangeeta Reddy","Department":"Cloud & Infrastructure","Job Role":"DevOps Specialist","Team":"Hybrid Platform Team","Manager":"Swati Bhasin","Experience Years":11.8,"Assigned Tasks":46,"Completed Tasks":41,"Pending Tasks":5,"Average Working Hours Per Day":9.2,"Overtime Hours Per Week":4.2,"Absence Days":0,"Employee Engagement Score":83.6,"Performance Score":78.7,"Task Completion Rate":89.1,"Workload Score":59.5,"Productivity Score":87.1,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1069","Employee Name":"Tanvi Saxena","Department":"Digital Experience","Job Role":"Digital Product Designer","Team":"UI Platform Guild","Manager":"Rajeshwar Rao","Experience Years":8,"Assigned Tasks":35,"Completed Tasks":24,"Pending Tasks":11,"Average Working Hours Per Day":8.6,"Overtime Hours Per Week":1.9,"Absence Days":2,"Employee Engagement Score":66.7,"Performance Score":64.8,"Task Completion Rate":68.6,"Workload Score":58.8,"Productivity Score":74.3,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1070","Employee Name":"Aniket Iyer","Department":"Data & AI","Job Role":"Data Engineer","Team":"Data Lakehouse Ops","Manager":"Kavita Sundaram","Experience Years":10.5,"Assigned Tasks":36,"Completed Tasks":29,"Pending Tasks":7,"Average Working Hours Per Day":8.3,"Overtime Hours Per Week":0.7,"Absence Days":4,"Employee Engagement Score":76.9,"Performance Score":71.2,"Task Completion Rate":80.6,"Workload Score":62.4,"Productivity Score":77.2,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1071","Employee Name":"Sangeeta Gupta","Department":"Enterprise Application Services","Job Role":"SAP/ERP Consultant","Team":"Salesforce Cloud Pod","Manager":"Kavita Sundaram","Experience Years":12.2,"Assigned Tasks":40,"Completed Tasks":35,"Pending Tasks":5,"Average Working Hours Per Day":9,"Overtime Hours Per Week":3.2,"Absence Days":0,"Employee Engagement Score":91.1,"Performance Score":81.4,"Task Completion Rate":87.5,"Workload Score":54.5,"Productivity Score":88.3,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1072","Employee Name":"Aditi Nair","Department":"Enterprise Application Services","Job Role":"Integration Architect","Team":"Oracle ERP Services","Manager":"Vikramaditya Sengupta","Experience Years":1.1,"Assigned Tasks":28,"Completed Tasks":18,"Pending Tasks":10,"Average Working Hours Per Day":7.6,"Overtime Hours Per Week":0.4,"Absence Days":6,"Employee Engagement Score":42,"Performance Score":53.7,"Task Completion Rate":64.3,"Workload Score":42.5,"Productivity Score":67.5,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1073","Employee Name":"Lakshmi Gupta","Department":"Engineering Services","Job Role":"IoT Systems Engineer","Team":"Smart Edge Mobility","Manager":"Arunachalam Murthy","Experience Years":3.6,"Assigned Tasks":38,"Completed Tasks":26,"Pending Tasks":12,"Average Working Hours Per Day":8.1,"Overtime Hours Per Week":2.7,"Absence Days":3,"Employee Engagement Score":68,"Performance Score":63.8,"Task Completion Rate":68.4,"Workload Score":51.1,"Productivity Score":71.8,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1074","Employee Name":"Arjun Gupta","Department":"Engineering Services","Job Role":"Technical Architect","Team":"AutoTech Systems","Manager":"Rohan Nambisan","Experience Years":12.3,"Assigned Tasks":54,"Completed Tasks":32,"Pending Tasks":22,"Average Working Hours Per Day":11,"Overtime Hours Per Week":12.1,"Absence Days":9,"Employee Engagement Score":55.7,"Performance Score":55.8,"Task Completion Rate":59.3,"Workload Score":85.9,"Productivity Score":66.6,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1075","Employee Name":"Tarun Choudhury","Department":"Digital Experience","Job Role":"Full Stack Developer","Team":"UI Platform Guild","Manager":"Rohan Nambisan","Experience Years":13,"Assigned Tasks":55,"Completed Tasks":43,"Pending Tasks":12,"Average Working Hours Per Day":9,"Overtime Hours Per Week":1.4,"Absence Days":0,"Employee Engagement Score":75.4,"Performance Score":70.7,"Task Completion Rate":78.2,"Workload Score":71.2,"Productivity Score":78.8,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1076","Employee Name":"Suresh Srinivasan","Department":"Data & AI","Job Role":"BI Analytics Consultant","Team":"Predictive Analytics Pod","Manager":"Deepak Nambiar","Experience Years":1.4,"Assigned Tasks":43,"Completed Tasks":31,"Pending Tasks":12,"Average Working Hours Per Day":8.7,"Overtime Hours Per Week":6,"Absence Days":1,"Employee Engagement Score":91.9,"Performance Score":73.9,"Task Completion Rate":72.1,"Workload Score":70.4,"Productivity Score":79.6,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1077","Employee Name":"Zoya Gupta","Department":"Engineering Services","Job Role":"IoT Systems Engineer","Team":"Connected Devices Lab","Manager":"Vikramaditya Sengupta","Experience Years":14.2,"Assigned Tasks":69,"Completed Tasks":32,"Pending Tasks":37,"Average Working Hours Per Day":10.8,"Overtime Hours Per Week":14.3,"Absence Days":9,"Employee Engagement Score":54.6,"Performance Score":44,"Task Completion Rate":46.4,"Workload Score":90.7,"Productivity Score":51.1,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1078","Employee Name":"Harish Kulkarni","Department":"Digital Experience","Job Role":"Solutions Consultant","Team":"Retail Digital Studio","Manager":"Gautam Subramanian","Experience Years":2.3,"Assigned Tasks":27,"Completed Tasks":15,"Pending Tasks":12,"Average Working Hours Per Day":7.6,"Overtime Hours Per Week":1.7,"Absence Days":6,"Employee Engagement Score":60.3,"Performance Score":56.7,"Task Completion Rate":55.6,"Workload Score":43.8,"Productivity Score":58.1,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1079","Employee Name":"Shalini Bose","Department":"Digital Experience","Job Role":"Digital Product Designer","Team":"FinTech Experience","Manager":"Ananya Deshmukh","Experience Years":8.5,"Assigned Tasks":41,"Completed Tasks":36,"Pending Tasks":5,"Average Working Hours Per Day":8.1,"Overtime Hours Per Week":4,"Absence Days":2,"Employee Engagement Score":75.8,"Performance Score":71.7,"Task Completion Rate":87.8,"Workload Score":58.3,"Productivity Score":86.3,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1080","Employee Name":"Yash Iyer","Department":"Cyber Security","Job Role":"Compliance Lead","Team":"SecOps Compliance","Manager":"Ananya Deshmukh","Experience Years":10.9,"Assigned Tasks":27,"Completed Tasks":16,"Pending Tasks":11,"Average Working Hours Per Day":7.2,"Overtime Hours Per Week":2.7,"Absence Days":5,"Employee Engagement Score":47.1,"Performance Score":55.5,"Task Completion Rate":59.3,"Workload Score":46.3,"Productivity Score":61.7,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1081","Employee Name":"Vijay Mishra","Department":"Quality Engineering","Job Role":"SDET Lead","Team":"Automation Matrix","Manager":"Rohan Nambisan","Experience Years":12,"Assigned Tasks":64,"Completed Tasks":30,"Pending Tasks":34,"Average Working Hours Per Day":12,"Overtime Hours Per Week":18.3,"Absence Days":5,"Employee Engagement Score":45.1,"Performance Score":43.4,"Task Completion Rate":46.9,"Workload Score":92.2,"Productivity Score":46.1,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1082","Employee Name":"Amrita Kapoor","Department":"Engineering Services","Job Role":"IoT Systems Engineer","Team":"Smart Edge Mobility","Manager":"Vikramaditya Sengupta","Experience Years":2.6,"Assigned Tasks":44,"Completed Tasks":34,"Pending Tasks":10,"Average Working Hours Per Day":8.6,"Overtime Hours Per Week":3.9,"Absence Days":2,"Employee Engagement Score":66,"Performance Score":65.2,"Task Completion Rate":77.3,"Workload Score":56.3,"Productivity Score":77.2,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1083","Employee Name":"Siddharth Pillai","Department":"Digital Experience","Job Role":"Solutions Consultant","Team":"FinTech Experience","Manager":"Sneha Kulkarni","Experience Years":10.5,"Assigned Tasks":41,"Completed Tasks":35,"Pending Tasks":6,"Average Working Hours Per Day":10,"Overtime Hours Per Week":19.7,"Absence Days":3,"Employee Engagement Score":72.1,"Performance Score":81.8,"Task Completion Rate":85.4,"Workload Score":84.3,"Productivity Score":91.9,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1084","Employee Name":"Jayant Saxena","Department":"Quality Engineering","Job Role":"Automation Test Specialist","Team":"Automation Matrix","Manager":"Gautam Subramanian","Experience Years":6.7,"Assigned Tasks":44,"Completed Tasks":37,"Pending Tasks":7,"Average Working Hours Per Day":11,"Overtime Hours Per Week":18.3,"Absence Days":4,"Employee Engagement Score":63,"Performance Score":76.8,"Task Completion Rate":84.1,"Workload Score":91,"Productivity Score":90.5,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1085","Employee Name":"Gayatri Gupta","Department":"Quality Engineering","Job Role":"Quality Assurance Analyst","Team":"Performance Guild","Manager":"Vikramaditya Sengupta","Experience Years":12.5,"Assigned Tasks":41,"Completed Tasks":28,"Pending Tasks":13,"Average Working Hours Per Day":8.6,"Overtime Hours Per Week":4.7,"Absence Days":2,"Employee Engagement Score":77.4,"Performance Score":63.5,"Task Completion Rate":68.3,"Workload Score":59.7,"Productivity Score":72.4,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1086","Employee Name":"Shreya Deshpande","Department":"Quality Engineering","Job Role":"SDET Lead","Team":"Automation Matrix","Manager":"Pooja Hegde","Experience Years":15.4,"Assigned Tasks":32,"Completed Tasks":18,"Pending Tasks":14,"Average Working Hours Per Day":7.9,"Overtime Hours Per Week":0.8,"Absence Days":2,"Employee Engagement Score":58.3,"Performance Score":50.8,"Task Completion Rate":56.2,"Workload Score":36.3,"Productivity Score":59.2,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1087","Employee Name":"Kiran Pandey","Department":"Cloud & Infrastructure","Job Role":"Site Reliability Engineer","Team":"CloudOps Alpha","Manager":"Deepak Nambiar","Experience Years":9.5,"Assigned Tasks":35,"Completed Tasks":33,"Pending Tasks":2,"Average Working Hours Per Day":8.4,"Overtime Hours Per Week":1.2,"Absence Days":1,"Employee Engagement Score":88,"Performance Score":80.8,"Task Completion Rate":94.3,"Workload Score":74.9,"Productivity Score":93.1,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1088","Employee Name":"Snehal Bansal","Department":"Digital Experience","Job Role":"Digital Product Designer","Team":"UI Platform Guild","Manager":"Swati Bhasin","Experience Years":1.1,"Assigned Tasks":68,"Completed Tasks":36,"Pending Tasks":32,"Average Working Hours Per Day":11.6,"Overtime Hours Per Week":18.6,"Absence Days":9,"Employee Engagement Score":46.4,"Performance Score":47.6,"Task Completion Rate":52.9,"Workload Score":83.1,"Productivity Score":57.8,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1089","Employee Name":"Manoj Srinivasan","Department":"Quality Engineering","Job Role":"Continuous Testing Architect","Team":"API Test Labs","Manager":"Priya Venkatesh","Experience Years":2.9,"Assigned Tasks":21,"Completed Tasks":13,"Pending Tasks":8,"Average Working Hours Per Day":7.2,"Overtime Hours Per Week":1.5,"Absence Days":2,"Employee Engagement Score":46.4,"Performance Score":50.4,"Task Completion Rate":61.9,"Workload Score":43.1,"Productivity Score":62.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1090","Employee Name":"Siddharth Naidu","Department":"Cloud & Infrastructure","Job Role":"Infrastructure Consultant","Team":"Hybrid Platform Team","Manager":"Priya Venkatesh","Experience Years":17.2,"Assigned Tasks":47,"Completed Tasks":38,"Pending Tasks":9,"Average Working Hours Per Day":8.6,"Overtime Hours Per Week":1.1,"Absence Days":2,"Employee Engagement Score":82.7,"Performance Score":68,"Task Completion Rate":80.9,"Workload Score":70.1,"Productivity Score":78.8,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1091","Employee Name":"Kiran Mukherjee","Department":"Engineering Services","Job Role":"Embedded Software Engineer","Team":"PLM Modernization","Manager":"Kavita Sundaram","Experience Years":1.8,"Assigned Tasks":46,"Completed Tasks":45,"Pending Tasks":1,"Average Working Hours Per Day":8.2,"Overtime Hours Per Week":5.7,"Absence Days":1,"Employee Engagement Score":84.6,"Performance Score":79.9,"Task Completion Rate":97.8,"Workload Score":70.7,"Productivity Score":95.7,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1092","Employee Name":"Nisha Verma","Department":"Enterprise Application Services","Job Role":"CRM Specialist","Team":"SAP Core Modernization","Manager":"Rajeshwar Rao","Experience Years":16.1,"Assigned Tasks":47,"Completed Tasks":35,"Pending Tasks":12,"Average Working Hours Per Day":8.5,"Overtime Hours Per Week":5.9,"Absence Days":1,"Employee Engagement Score":90.1,"Performance Score":79.1,"Task Completion Rate":74.5,"Workload Score":59.1,"Productivity Score":82.6,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1093","Employee Name":"Shreya Bose","Department":"Enterprise Application Services","Job Role":"SAP/ERP Consultant","Team":"Oracle ERP Services","Manager":"Deepak Nambiar","Experience Years":16.1,"Assigned Tasks":40,"Completed Tasks":27,"Pending Tasks":13,"Average Working Hours Per Day":8.3,"Overtime Hours Per Week":5.8,"Absence Days":3,"Employee Engagement Score":66.6,"Performance Score":67,"Task Completion Rate":67.5,"Workload Score":69.7,"Productivity Score":74.7,"Risk Level":"Medium","Reporting Month":"2026-10"},{"Employee ID":"INF-1094","Employee Name":"Sangeeta Bansal","Department":"Digital Experience","Job Role":"Solutions Consultant","Team":"OmniChannel Portal","Manager":"Vikramaditya Sengupta","Experience Years":2.7,"Assigned Tasks":37,"Completed Tasks":33,"Pending Tasks":4,"Average Working Hours Per Day":8.5,"Overtime Hours Per Week":5.3,"Absence Days":0,"Employee Engagement Score":82,"Performance Score":82.6,"Task Completion Rate":89.2,"Workload Score":58.8,"Productivity Score":90.4,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1095","Employee Name":"Neha Chatterjee","Department":"Engineering Services","Job Role":"Embedded Software Engineer","Team":"Smart Edge Mobility","Manager":"Gautam Subramanian","Experience Years":11.8,"Assigned Tasks":36,"Completed Tasks":32,"Pending Tasks":4,"Average Working Hours Per Day":10,"Overtime Hours Per Week":18.7,"Absence Days":3,"Employee Engagement Score":88.6,"Performance Score":80.5,"Task Completion Rate":88.9,"Workload Score":88.8,"Productivity Score":88.4,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1096","Employee Name":"Lakshmi Menon","Department":"Data & AI","Job Role":"Data Engineer","Team":"Enterprise GenAI Lab","Manager":"Rohan Nambisan","Experience Years":7.2,"Assigned Tasks":37,"Completed Tasks":31,"Pending Tasks":6,"Average Working Hours Per Day":9.2,"Overtime Hours Per Week":1.2,"Absence Days":0,"Employee Engagement Score":82.7,"Performance Score":75.3,"Task Completion Rate":83.8,"Workload Score":58.4,"Productivity Score":87,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1097","Employee Name":"Sanjay Gupta","Department":"Engineering Services","Job Role":"Quality Lead","Team":"Connected Devices Lab","Manager":"Priya Venkatesh","Experience Years":3.3,"Assigned Tasks":70,"Completed Tasks":41,"Pending Tasks":29,"Average Working Hours Per Day":11.3,"Overtime Hours Per Week":24,"Absence Days":5,"Employee Engagement Score":57.8,"Performance Score":54.9,"Task Completion Rate":58.6,"Workload Score":81.5,"Productivity Score":59.7,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1098","Employee Name":"Jayant Mishra","Department":"Enterprise Application Services","Job Role":"CRM Specialist","Team":"Salesforce Cloud Pod","Manager":"Vikramaditya Sengupta","Experience Years":9.6,"Assigned Tasks":45,"Completed Tasks":23,"Pending Tasks":22,"Average Working Hours Per Day":9.8,"Overtime Hours Per Week":21.5,"Absence Days":6,"Employee Engagement Score":50.5,"Performance Score":46.4,"Task Completion Rate":51.1,"Workload Score":82,"Productivity Score":51.4,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1099","Employee Name":"Jyoti Pillai","Department":"Engineering Services","Job Role":"Quality Lead","Team":"AutoTech Systems","Manager":"Deepak Nambiar","Experience Years":15,"Assigned Tasks":66,"Completed Tasks":34,"Pending Tasks":32,"Average Working Hours Per Day":11.1,"Overtime Hours Per Week":17.4,"Absence Days":9,"Employee Engagement Score":38.5,"Performance Score":46.8,"Task Completion Rate":51.5,"Workload Score":97.4,"Productivity Score":55.5,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1100","Employee Name":"Ashwin Choudhury","Department":"Cyber Security","Job Role":"Security Operations Analyst","Team":"CyberShield SOC","Manager":"Rohan Nambisan","Experience Years":3.6,"Assigned Tasks":75,"Completed Tasks":41,"Pending Tasks":34,"Average Working Hours Per Day":11.3,"Overtime Hours Per Week":16.2,"Absence Days":3,"Employee Engagement Score":42.7,"Performance Score":47.8,"Task Completion Rate":54.7,"Workload Score":84.5,"Productivity Score":55.5,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1101","Employee Name":"Ashwin Srinivasan","Department":"Enterprise Application Services","Job Role":"Technical Consultant","Team":"SAP Core Modernization","Manager":"Rohan Nambisan","Experience Years":11.9,"Assigned Tasks":44,"Completed Tasks":28,"Pending Tasks":16,"Average Working Hours Per Day":8.1,"Overtime Hours Per Week":3.7,"Absence Days":1,"Employee Engagement Score":76.6,"Performance Score":60.7,"Task Completion Rate":63.6,"Workload Score":62.8,"Productivity Score":69.7,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1102","Employee Name":"Shreya Malhotra","Department":"Cyber Security","Job Role":"Identity & Access Manager","Team":"Threat Intelligence Pod","Manager":"Swati Bhasin","Experience Years":8.1,"Assigned Tasks":34,"Completed Tasks":22,"Pending Tasks":12,"Average Working Hours Per Day":8.5,"Overtime Hours Per Week":1.7,"Absence Days":4,"Employee Engagement Score":74.5,"Performance Score":61.9,"Task Completion Rate":64.7,"Workload Score":61,"Productivity Score":71.8,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1103","Employee Name":"Nikhil Choudhury","Department":"Data & AI","Job Role":"AI Research Associate","Team":"Enterprise GenAI Lab","Manager":"Vikramaditya Sengupta","Experience Years":11.3,"Assigned Tasks":44,"Completed Tasks":33,"Pending Tasks":11,"Average Working Hours Per Day":8.9,"Overtime Hours Per Week":6.2,"Absence Days":0,"Employee Engagement Score":82.4,"Performance Score":72.6,"Task Completion Rate":75,"Workload Score":68.5,"Productivity Score":80.4,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1104","Employee Name":"Gayatri Reddy","Department":"Cloud & Infrastructure","Job Role":"Cloud Operations Engineer","Team":"Hybrid Platform Team","Manager":"Deepak Nambiar","Experience Years":15.7,"Assigned Tasks":50,"Completed Tasks":44,"Pending Tasks":6,"Average Working Hours Per Day":9.1,"Overtime Hours Per Week":5.9,"Absence Days":1,"Employee Engagement Score":78.8,"Performance Score":79,"Task Completion Rate":88,"Workload Score":74.1,"Productivity Score":91,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1105","Employee Name":"Jyoti Deshpande","Department":"Cloud & Infrastructure","Job Role":"Cloud Operations Engineer","Team":"SRE Velocity","Manager":"Rohan Nambisan","Experience Years":8.8,"Assigned Tasks":51,"Completed Tasks":44,"Pending Tasks":7,"Average Working Hours Per Day":8.1,"Overtime Hours Per Week":2.7,"Absence Days":3,"Employee Engagement Score":88.1,"Performance Score":79.1,"Task Completion Rate":86.3,"Workload Score":65.4,"Productivity Score":93.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1106","Employee Name":"Ashwin Mishra","Department":"Enterprise Application Services","Job Role":"Integration Architect","Team":"Integration Nexus","Manager":"Vikramaditya Sengupta","Experience Years":1.8,"Assigned Tasks":57,"Completed Tasks":31,"Pending Tasks":26,"Average Working Hours Per Day":10.4,"Overtime Hours Per Week":15.5,"Absence Days":5,"Employee Engagement Score":55.6,"Performance Score":50.7,"Task Completion Rate":54.4,"Workload Score":89.2,"Productivity Score":55.1,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1107","Employee Name":"Ashwin Patel","Department":"Data & AI","Job Role":"BI Analytics Consultant","Team":"Data Lakehouse Ops","Manager":"Rohan Nambisan","Experience Years":17,"Assigned Tasks":26,"Completed Tasks":18,"Pending Tasks":8,"Average Working Hours Per Day":8.4,"Overtime Hours Per Week":3,"Absence Days":4,"Employee Engagement Score":72.8,"Performance Score":58,"Task Completion Rate":69.2,"Workload Score":54.4,"Productivity Score":65.5,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1108","Employee Name":"Ashwin Bose","Department":"Cyber Security","Job Role":"Identity & Access Manager","Team":"Threat Intelligence Pod","Manager":"Deepak Nambiar","Experience Years":17.8,"Assigned Tasks":42,"Completed Tasks":30,"Pending Tasks":12,"Average Working Hours Per Day":8.3,"Overtime Hours Per Week":5,"Absence Days":4,"Employee Engagement Score":70.1,"Performance Score":63.2,"Task Completion Rate":71.4,"Workload Score":56.6,"Productivity Score":71.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1109","Employee Name":"Manoj Hegde","Department":"Enterprise Application Services","Job Role":"SAP/ERP Consultant","Team":"Integration Nexus","Manager":"Sneha Kulkarni","Experience Years":17.4,"Assigned Tasks":43,"Completed Tasks":28,"Pending Tasks":15,"Average Working Hours Per Day":8.5,"Overtime Hours Per Week":4.3,"Absence Days":4,"Employee Engagement Score":69.4,"Performance Score":65.4,"Task Completion Rate":65.1,"Workload Score":67.1,"Productivity Score":71.7,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1110","Employee Name":"Snehal Patel","Department":"Digital Experience","Job Role":"Frontend UI/UX Specialist","Team":"UI Platform Guild","Manager":"Vikramaditya Sengupta","Experience Years":8.1,"Assigned Tasks":47,"Completed Tasks":43,"Pending Tasks":4,"Average Working Hours Per Day":8.6,"Overtime Hours Per Week":4.7,"Absence Days":0,"Employee Engagement Score":89.7,"Performance Score":83.5,"Task Completion Rate":91.5,"Workload Score":56.7,"Productivity Score":93.7,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1111","Employee Name":"Siddharth Deshpande","Department":"Cyber Security","Job Role":"Cloud Security Architect","Team":"ZeroTrust Identity","Manager":"Kavita Sundaram","Experience Years":8.8,"Assigned Tasks":53,"Completed Tasks":47,"Pending Tasks":6,"Average Working Hours Per Day":8.8,"Overtime Hours Per Week":6.2,"Absence Days":3,"Employee Engagement Score":88.9,"Performance Score":78.4,"Task Completion Rate":88.7,"Workload Score":64.6,"Productivity Score":89.6,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1112","Employee Name":"Gaurav Gupta","Department":"Quality Engineering","Job Role":"SDET Lead","Team":"Performance Guild","Manager":"Pooja Hegde","Experience Years":13,"Assigned Tasks":40,"Completed Tasks":32,"Pending Tasks":8,"Average Working Hours Per Day":9.1,"Overtime Hours Per Week":5.8,"Absence Days":3,"Employee Engagement Score":86.5,"Performance Score":74.9,"Task Completion Rate":80,"Workload Score":60,"Productivity Score":83.2,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1113","Employee Name":"Varun Kapoor","Department":"Digital Experience","Job Role":"Experience Architect","Team":"FinTech Experience","Manager":"Sneha Kulkarni","Experience Years":17.2,"Assigned Tasks":51,"Completed Tasks":24,"Pending Tasks":27,"Average Working Hours Per Day":11.1,"Overtime Hours Per Week":21,"Absence Days":7,"Employee Engagement Score":49.5,"Performance Score":40.2,"Task Completion Rate":47.1,"Workload Score":96.5,"Productivity Score":47.3,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1114","Employee Name":"Sameer Mukherjee","Department":"Digital Experience","Job Role":"Frontend UI/UX Specialist","Team":"Retail Digital Studio","Manager":"Gautam Subramanian","Experience Years":5,"Assigned Tasks":49,"Completed Tasks":21,"Pending Tasks":28,"Average Working Hours Per Day":10.7,"Overtime Hours Per Week":20.2,"Absence Days":4,"Employee Engagement Score":49.9,"Performance Score":43.3,"Task Completion Rate":42.9,"Workload Score":84.6,"Productivity Score":42.1,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1115","Employee Name":"Pranav Srinivasan","Department":"Digital Experience","Job Role":"Experience Architect","Team":"OmniChannel Portal","Manager":"Sneha Kulkarni","Experience Years":12,"Assigned Tasks":29,"Completed Tasks":20,"Pending Tasks":9,"Average Working Hours Per Day":7.7,"Overtime Hours Per Week":1.6,"Absence Days":3,"Employee Engagement Score":40.8,"Performance Score":55.3,"Task Completion Rate":69,"Workload Score":32,"Productivity Score":65.3,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1116","Employee Name":"Akhil Bansal","Department":"Data & AI","Job Role":"AI Research Associate","Team":"Enterprise GenAI Lab","Manager":"Pooja Hegde","Experience Years":17.4,"Assigned Tasks":19,"Completed Tasks":12,"Pending Tasks":7,"Average Working Hours Per Day":7.2,"Overtime Hours Per Week":1.7,"Absence Days":5,"Employee Engagement Score":47.4,"Performance Score":55.6,"Task Completion Rate":63.2,"Workload Score":49.3,"Productivity Score":66.7,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1117","Employee Name":"Ashwin Saxena","Department":"Cyber Security","Job Role":"Cloud Security Architect","Team":"ZeroTrust Identity","Manager":"Rajeshwar Rao","Experience Years":14.7,"Assigned Tasks":32,"Completed Tasks":30,"Pending Tasks":2,"Average Working Hours Per Day":8.8,"Overtime Hours Per Week":5.3,"Absence Days":1,"Employee Engagement Score":90.8,"Performance Score":84.9,"Task Completion Rate":93.8,"Workload Score":68.8,"Productivity Score":91.3,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1118","Employee Name":"Vinay Choudhury","Department":"Cyber Security","Job Role":"Identity & Access Manager","Team":"CyberShield SOC","Manager":"Deepak Nambiar","Experience Years":12.4,"Assigned Tasks":53,"Completed Tasks":28,"Pending Tasks":25,"Average Working Hours Per Day":10.3,"Overtime Hours Per Week":15,"Absence Days":5,"Employee Engagement Score":47.1,"Performance Score":44,"Task Completion Rate":52.8,"Workload Score":80.8,"Productivity Score":52,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1119","Employee Name":"Aarav Chatterjee","Department":"Engineering Services","Job Role":"IoT Systems Engineer","Team":"Connected Devices Lab","Manager":"Arunachalam Murthy","Experience Years":12.4,"Assigned Tasks":54,"Completed Tasks":52,"Pending Tasks":2,"Average Working Hours Per Day":8.8,"Overtime Hours Per Week":6.5,"Absence Days":2,"Employee Engagement Score":88.8,"Performance Score":79.7,"Task Completion Rate":96.3,"Workload Score":55.7,"Productivity Score":91.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1120","Employee Name":"Pranav Reddy","Department":"Data & AI","Job Role":"Data Architect","Team":"Data Lakehouse Ops","Manager":"Deepak Nambiar","Experience Years":12.9,"Assigned Tasks":30,"Completed Tasks":16,"Pending Tasks":14,"Average Working Hours Per Day":7.9,"Overtime Hours Per Week":2.5,"Absence Days":2,"Employee Engagement Score":56.6,"Performance Score":49.8,"Task Completion Rate":53.3,"Workload Score":46.7,"Productivity Score":54.5,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1121","Employee Name":"Chetan Hegde","Department":"Cloud & Infrastructure","Job Role":"Cloud Operations Engineer","Team":"CloudOps Beta","Manager":"Swati Bhasin","Experience Years":10.1,"Assigned Tasks":67,"Completed Tasks":35,"Pending Tasks":32,"Average Working Hours Per Day":10.6,"Overtime Hours Per Week":20.2,"Absence Days":7,"Employee Engagement Score":37.5,"Performance Score":43,"Task Completion Rate":52.2,"Workload Score":95.1,"Productivity Score":57.2,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1122","Employee Name":"Manoj Bhattacharya","Department":"Cyber Security","Job Role":"Security Operations Analyst","Team":"SecOps Compliance","Manager":"Gautam Subramanian","Experience Years":14.7,"Assigned Tasks":43,"Completed Tasks":29,"Pending Tasks":14,"Average Working Hours Per Day":8.7,"Overtime Hours Per Week":4.5,"Absence Days":1,"Employee Engagement Score":67.6,"Performance Score":56.3,"Task Completion Rate":67.4,"Workload Score":58.7,"Productivity Score":66,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1123","Employee Name":"Darshan Deshpande","Department":"Cloud & Infrastructure","Job Role":"Systems Architect","Team":"SRE Velocity","Manager":"Kavita Sundaram","Experience Years":14.1,"Assigned Tasks":37,"Completed Tasks":26,"Pending Tasks":11,"Average Working Hours Per Day":8.5,"Overtime Hours Per Week":2.5,"Absence Days":4,"Employee Engagement Score":76.5,"Performance Score":66.9,"Task Completion Rate":70.3,"Workload Score":71.5,"Productivity Score":71.3,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1124","Employee Name":"Rohan Reddy","Department":"Engineering Services","Job Role":"IoT Systems Engineer","Team":"Smart Edge Mobility","Manager":"Kavita Sundaram","Experience Years":17.9,"Assigned Tasks":32,"Completed Tasks":29,"Pending Tasks":3,"Average Working Hours Per Day":9.2,"Overtime Hours Per Week":6,"Absence Days":3,"Employee Engagement Score":84.3,"Performance Score":85.8,"Task Completion Rate":90.6,"Workload Score":54.9,"Productivity Score":95.6,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1125","Employee Name":"Kiran Reddy","Department":"Enterprise Application Services","Job Role":"CRM Specialist","Team":"SAP Core Modernization","Manager":"Arunachalam Murthy","Experience Years":14.8,"Assigned Tasks":38,"Completed Tasks":27,"Pending Tasks":11,"Average Working Hours Per Day":9.1,"Overtime Hours Per Week":1.1,"Absence Days":3,"Employee Engagement Score":86.9,"Performance Score":74.8,"Task Completion Rate":71.1,"Workload Score":69.6,"Productivity Score":79.2,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1126","Employee Name":"Tarun Verma","Department":"Data & AI","Job Role":"AI Research Associate","Team":"Enterprise GenAI Lab","Manager":"Rohan Nambisan","Experience Years":4.7,"Assigned Tasks":31,"Completed Tasks":20,"Pending Tasks":11,"Average Working Hours Per Day":7.7,"Overtime Hours Per Week":0.9,"Absence Days":6,"Employee Engagement Score":52.7,"Performance Score":57.8,"Task Completion Rate":64.5,"Workload Score":31.2,"Productivity Score":66.5,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1127","Employee Name":"Jyoti Mishra","Department":"Digital Experience","Job Role":"Solutions Consultant","Team":"Retail Digital Studio","Manager":"Deepak Nambiar","Experience Years":6.1,"Assigned Tasks":65,"Completed Tasks":39,"Pending Tasks":26,"Average Working Hours Per Day":11.7,"Overtime Hours Per Week":22.9,"Absence Days":3,"Employee Engagement Score":50,"Performance Score":54.8,"Task Completion Rate":60,"Workload Score":97,"Productivity Score":59.6,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1128","Employee Name":"Vidya Joshi","Department":"Enterprise Application Services","Job Role":"Enterprise Solution Lead","Team":"Integration Nexus","Manager":"Kavita Sundaram","Experience Years":6.1,"Assigned Tasks":72,"Completed Tasks":43,"Pending Tasks":29,"Average Working Hours Per Day":10.1,"Overtime Hours Per Week":14.7,"Absence Days":3,"Employee Engagement Score":56.8,"Performance Score":57.2,"Task Completion Rate":59.7,"Workload Score":88.8,"Productivity Score":60.4,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1129","Employee Name":"Ashwin Pillai","Department":"Digital Experience","Job Role":"Experience Architect","Team":"Retail Digital Studio","Manager":"Vikramaditya Sengupta","Experience Years":12,"Assigned Tasks":21,"Completed Tasks":10,"Pending Tasks":11,"Average Working Hours Per Day":7.3,"Overtime Hours Per Week":2.2,"Absence Days":6,"Employee Engagement Score":48.3,"Performance Score":48.1,"Task Completion Rate":47.6,"Workload Score":48.6,"Productivity Score":50.9,"Risk Level":"Medium","Reporting Month":"2026-10"},{"Employee ID":"INF-1130","Employee Name":"Umesh Hegde","Department":"Engineering Services","Job Role":"Technical Architect","Team":"Connected Devices Lab","Manager":"Ananya Deshmukh","Experience Years":4.6,"Assigned Tasks":21,"Completed Tasks":14,"Pending Tasks":7,"Average Working Hours Per Day":8,"Overtime Hours Per Week":0.6,"Absence Days":5,"Employee Engagement Score":42.6,"Performance Score":56,"Task Completion Rate":66.7,"Workload Score":36.7,"Productivity Score":67.3,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1131","Employee Name":"Meera Pandey","Department":"Digital Experience","Job Role":"Solutions Consultant","Team":"OmniChannel Portal","Manager":"Sneha Kulkarni","Experience Years":7.5,"Assigned Tasks":47,"Completed Tasks":38,"Pending Tasks":9,"Average Working Hours Per Day":8.3,"Overtime Hours Per Week":4.1,"Absence Days":3,"Employee Engagement Score":91.1,"Performance Score":77.5,"Task Completion Rate":80.9,"Workload Score":60.3,"Productivity Score":86.4,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1132","Employee Name":"Akhil Hegde","Department":"Quality Engineering","Job Role":"Performance Engineering Analyst","Team":"Performance Guild","Manager":"Arunachalam Murthy","Experience Years":5.4,"Assigned Tasks":23,"Completed Tasks":12,"Pending Tasks":11,"Average Working Hours Per Day":7.6,"Overtime Hours Per Week":0.5,"Absence Days":3,"Employee Engagement Score":52.5,"Performance Score":49.5,"Task Completion Rate":52.2,"Workload Score":42.7,"Productivity Score":54.1,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1133","Employee Name":"Harish Malhotra","Department":"Quality Engineering","Job Role":"Quality Assurance Analyst","Team":"API Test Labs","Manager":"Ananya Deshmukh","Experience Years":3.9,"Assigned Tasks":42,"Completed Tasks":34,"Pending Tasks":8,"Average Working Hours Per Day":8.6,"Overtime Hours Per Week":2.9,"Absence Days":1,"Employee Engagement Score":77.2,"Performance Score":67.2,"Task Completion Rate":81,"Workload Score":53.7,"Productivity Score":78.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1134","Employee Name":"Amrita Malhotra","Department":"Cloud & Infrastructure","Job Role":"Site Reliability Engineer","Team":"CloudOps Beta","Manager":"Gautam Subramanian","Experience Years":4.9,"Assigned Tasks":44,"Completed Tasks":32,"Pending Tasks":12,"Average Working Hours Per Day":8.4,"Overtime Hours Per Week":2.2,"Absence Days":4,"Employee Engagement Score":76.8,"Performance Score":63.4,"Task Completion Rate":72.7,"Workload Score":50.2,"Productivity Score":73.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1135","Employee Name":"Manoj Sharma","Department":"Cloud & Infrastructure","Job Role":"Infrastructure Consultant","Team":"Hybrid Platform Team","Manager":"Rohan Nambisan","Experience Years":17.6,"Assigned Tasks":74,"Completed Tasks":34,"Pending Tasks":40,"Average Working Hours Per Day":11.2,"Overtime Hours Per Week":21.7,"Absence Days":7,"Employee Engagement Score":59.8,"Performance Score":42.8,"Task Completion Rate":45.9,"Workload Score":94.3,"Productivity Score":46.7,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1136","Employee Name":"Vinay Menon","Department":"Enterprise Application Services","Job Role":"Enterprise Solution Lead","Team":"SAP Core Modernization","Manager":"Vikramaditya Sengupta","Experience Years":17.3,"Assigned Tasks":34,"Completed Tasks":28,"Pending Tasks":6,"Average Working Hours Per Day":9.6,"Overtime Hours Per Week":17.3,"Absence Days":0,"Employee Engagement Score":92.2,"Performance Score":78.4,"Task Completion Rate":82.4,"Workload Score":84.1,"Productivity Score":85.1,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1137","Employee Name":"Vidya Bose","Department":"Cyber Security","Job Role":"Security Operations Analyst","Team":"CyberShield SOC","Manager":"Rajeshwar Rao","Experience Years":4.6,"Assigned Tasks":19,"Completed Tasks":12,"Pending Tasks":7,"Average Working Hours Per Day":7.6,"Overtime Hours Per Week":0.1,"Absence Days":6,"Employee Engagement Score":46.2,"Performance Score":48.3,"Task Completion Rate":63.2,"Workload Score":49.5,"Productivity Score":62.3,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1138","Employee Name":"Karthik Sharma","Department":"Digital Experience","Job Role":"Solutions Consultant","Team":"Retail Digital Studio","Manager":"Pooja Hegde","Experience Years":15,"Assigned Tasks":31,"Completed Tasks":18,"Pending Tasks":13,"Average Working Hours Per Day":7.7,"Overtime Hours Per Week":1.7,"Absence Days":4,"Employee Engagement Score":59.7,"Performance Score":53.9,"Task Completion Rate":58.1,"Workload Score":36.6,"Productivity Score":57,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1139","Employee Name":"Snehal Mehta","Department":"Cloud & Infrastructure","Job Role":"Infrastructure Consultant","Team":"Hybrid Platform Team","Manager":"Arunachalam Murthy","Experience Years":2.7,"Assigned Tasks":51,"Completed Tasks":42,"Pending Tasks":9,"Average Working Hours Per Day":8.7,"Overtime Hours Per Week":4.7,"Absence Days":0,"Employee Engagement Score":90.5,"Performance Score":80.2,"Task Completion Rate":82.4,"Workload Score":53.7,"Productivity Score":85.1,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1140","Employee Name":"Gaurav Menon","Department":"Cyber Security","Job Role":"Cloud Security Architect","Team":"SecOps Compliance","Manager":"Kavita Sundaram","Experience Years":12.6,"Assigned Tasks":27,"Completed Tasks":16,"Pending Tasks":11,"Average Working Hours Per Day":8.5,"Overtime Hours Per Week":4.8,"Absence Days":2,"Employee Engagement Score":62.8,"Performance Score":57.2,"Task Completion Rate":59.3,"Workload Score":51.9,"Productivity Score":66.1,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1141","Employee Name":"Aarav Gupta","Department":"Data & AI","Job Role":"BI Analytics Consultant","Team":"Data Lakehouse Ops","Manager":"Priya Venkatesh","Experience Years":3.3,"Assigned Tasks":45,"Completed Tasks":19,"Pending Tasks":26,"Average Working Hours Per Day":10.9,"Overtime Hours Per Week":16.9,"Absence Days":7,"Employee Engagement Score":50,"Performance Score":39.9,"Task Completion Rate":42.2,"Workload Score":87,"Productivity Score":44.3,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1142","Employee Name":"Jayant Choudhury","Department":"Data & AI","Job Role":"Data Engineer","Team":"Enterprise GenAI Lab","Manager":"Swati Bhasin","Experience Years":9.9,"Assigned Tasks":29,"Completed Tasks":18,"Pending Tasks":11,"Average Working Hours Per Day":8.2,"Overtime Hours Per Week":1.6,"Absence Days":4,"Employee Engagement Score":67.8,"Performance Score":62,"Task Completion Rate":62.1,"Workload Score":53.7,"Productivity Score":65.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1143","Employee Name":"Gayatri Mehta","Department":"Engineering Services","Job Role":"Quality Lead","Team":"Connected Devices Lab","Manager":"Ananya Deshmukh","Experience Years":2.8,"Assigned Tasks":42,"Completed Tasks":36,"Pending Tasks":6,"Average Working Hours Per Day":8.4,"Overtime Hours Per Week":4.7,"Absence Days":1,"Employee Engagement Score":83.6,"Performance Score":77.6,"Task Completion Rate":85.7,"Workload Score":73.8,"Productivity Score":85.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1144","Employee Name":"Pranav Bose","Department":"Digital Experience","Job Role":"Digital Product Designer","Team":"OmniChannel Portal","Manager":"Sneha Kulkarni","Experience Years":13.5,"Assigned Tasks":33,"Completed Tasks":26,"Pending Tasks":7,"Average Working Hours Per Day":8.6,"Overtime Hours Per Week":2,"Absence Days":1,"Employee Engagement Score":67.1,"Performance Score":64,"Task Completion Rate":78.8,"Workload Score":71.3,"Productivity Score":76.4,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1145","Employee Name":"Deepa Naidu","Department":"Quality Engineering","Job Role":"Continuous Testing Architect","Team":"Automation Matrix","Manager":"Pooja Hegde","Experience Years":8.8,"Assigned Tasks":38,"Completed Tasks":28,"Pending Tasks":10,"Average Working Hours Per Day":8.2,"Overtime Hours Per Week":4.2,"Absence Days":3,"Employee Engagement Score":62.5,"Performance Score":65.3,"Task Completion Rate":73.7,"Workload Score":59.6,"Productivity Score":74.4,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1146","Employee Name":"Vidya Pillai","Department":"Cloud & Infrastructure","Job Role":"Site Reliability Engineer","Team":"SRE Velocity","Manager":"Swati Bhasin","Experience Years":7.8,"Assigned Tasks":43,"Completed Tasks":39,"Pending Tasks":4,"Average Working Hours Per Day":8.8,"Overtime Hours Per Week":4.3,"Absence Days":0,"Employee Engagement Score":91.2,"Performance Score":79.7,"Task Completion Rate":90.7,"Workload Score":73.2,"Productivity Score":90.6,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1147","Employee Name":"Chaitanya Srinivasan","Department":"Cyber Security","Job Role":"Security Operations Analyst","Team":"SecOps Compliance","Manager":"Vikramaditya Sengupta","Experience Years":17.4,"Assigned Tasks":48,"Completed Tasks":43,"Pending Tasks":5,"Average Working Hours Per Day":8.3,"Overtime Hours Per Week":4.1,"Absence Days":1,"Employee Engagement Score":88.8,"Performance Score":78.5,"Task Completion Rate":89.6,"Workload Score":52.2,"Productivity Score":88,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1148","Employee Name":"Sameer Agarwal","Department":"Cyber Security","Job Role":"Vulnerability Assessment Specialist","Team":"ZeroTrust Identity","Manager":"Arunachalam Murthy","Experience Years":9.2,"Assigned Tasks":55,"Completed Tasks":42,"Pending Tasks":13,"Average Working Hours Per Day":8.1,"Overtime Hours Per Week":6,"Absence Days":3,"Employee Engagement Score":81.2,"Performance Score":72.9,"Task Completion Rate":76.4,"Workload Score":73.2,"Productivity Score":80.6,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1149","Employee Name":"Ankita Bhattacharya","Department":"Engineering Services","Job Role":"Quality Lead","Team":"PLM Modernization","Manager":"Priya Venkatesh","Experience Years":6.1,"Assigned Tasks":30,"Completed Tasks":23,"Pending Tasks":7,"Average Working Hours Per Day":8.7,"Overtime Hours Per Week":3.9,"Absence Days":2,"Employee Engagement Score":73.3,"Performance Score":67.7,"Task Completion Rate":76.7,"Workload Score":52.5,"Productivity Score":78,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1150","Employee Name":"Nisha Mukherjee","Department":"Quality Engineering","Job Role":"Quality Assurance Analyst","Team":"Performance Guild","Manager":"Kavita Sundaram","Experience Years":11.9,"Assigned Tasks":50,"Completed Tasks":44,"Pending Tasks":6,"Average Working Hours Per Day":8.7,"Overtime Hours Per Week":2.2,"Absence Days":1,"Employee Engagement Score":75.1,"Performance Score":76.5,"Task Completion Rate":88,"Workload Score":52.7,"Productivity Score":85.7,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1151","Employee Name":"Anand Hegde","Department":"Cloud & Infrastructure","Job Role":"Infrastructure Consultant","Team":"CloudOps Beta","Manager":"Vikramaditya Sengupta","Experience Years":6.5,"Assigned Tasks":52,"Completed Tasks":45,"Pending Tasks":7,"Average Working Hours Per Day":9,"Overtime Hours Per Week":4.2,"Absence Days":3,"Employee Engagement Score":82.8,"Performance Score":73.8,"Task Completion Rate":86.5,"Workload Score":58,"Productivity Score":83.6,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1152","Employee Name":"Sanjay Nair","Department":"Quality Engineering","Job Role":"SDET Lead","Team":"Automation Matrix","Manager":"Gautam Subramanian","Experience Years":3.3,"Assigned Tasks":61,"Completed Tasks":32,"Pending Tasks":29,"Average Working Hours Per Day":10,"Overtime Hours Per Week":20.3,"Absence Days":7,"Employee Engagement Score":51.1,"Performance Score":44.1,"Task Completion Rate":52.5,"Workload Score":84.1,"Productivity Score":52.1,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1153","Employee Name":"Snehal Pandey","Department":"Engineering Services","Job Role":"Product Lifecycle Consultant","Team":"Connected Devices Lab","Manager":"Ananya Deshmukh","Experience Years":5.9,"Assigned Tasks":75,"Completed Tasks":32,"Pending Tasks":43,"Average Working Hours Per Day":11,"Overtime Hours Per Week":22.4,"Absence Days":9,"Employee Engagement Score":38.7,"Performance Score":37.6,"Task Completion Rate":42.7,"Workload Score":94.8,"Productivity Score":42.2,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1154","Employee Name":"Manoj Naidu","Department":"Data & AI","Job Role":"AI Research Associate","Team":"BI Modernization","Manager":"Ananya Deshmukh","Experience Years":3.8,"Assigned Tasks":39,"Completed Tasks":33,"Pending Tasks":6,"Average Working Hours Per Day":8.3,"Overtime Hours Per Week":1.2,"Absence Days":3,"Employee Engagement Score":78.4,"Performance Score":78.8,"Task Completion Rate":84.6,"Workload Score":70.3,"Productivity Score":87.7,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1155","Employee Name":"Rahul Patel","Department":"Cyber Security","Job Role":"Security Operations Analyst","Team":"ZeroTrust Identity","Manager":"Rohan Nambisan","Experience Years":15,"Assigned Tasks":49,"Completed Tasks":39,"Pending Tasks":10,"Average Working Hours Per Day":8,"Overtime Hours Per Week":5.3,"Absence Days":1,"Employee Engagement Score":83.5,"Performance Score":78.1,"Task Completion Rate":79.6,"Workload Score":70.9,"Productivity Score":81.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1156","Employee Name":"Kiran Saxena","Department":"Quality Engineering","Job Role":"Automation Test Specialist","Team":"API Test Labs","Manager":"Priya Venkatesh","Experience Years":14.2,"Assigned Tasks":54,"Completed Tasks":49,"Pending Tasks":5,"Average Working Hours Per Day":8.7,"Overtime Hours Per Week":3.1,"Absence Days":1,"Employee Engagement Score":83.6,"Performance Score":81.3,"Task Completion Rate":90.7,"Workload Score":70.6,"Productivity Score":89,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1157","Employee Name":"Sachin Menon","Department":"Cyber Security","Job Role":"Identity & Access Manager","Team":"Threat Intelligence Pod","Manager":"Vikramaditya Sengupta","Experience Years":17.6,"Assigned Tasks":53,"Completed Tasks":51,"Pending Tasks":2,"Average Working Hours Per Day":9.1,"Overtime Hours Per Week":4.1,"Absence Days":3,"Employee Engagement Score":77.7,"Performance Score":83.6,"Task Completion Rate":96.2,"Workload Score":65.2,"Productivity Score":92.7,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1158","Employee Name":"Ashwin Agarwal","Department":"Quality Engineering","Job Role":"Performance Engineering Analyst","Team":"Performance Guild","Manager":"Kavita Sundaram","Experience Years":13.1,"Assigned Tasks":43,"Completed Tasks":33,"Pending Tasks":10,"Average Working Hours Per Day":8.5,"Overtime Hours Per Week":2.9,"Absence Days":4,"Employee Engagement Score":71.3,"Performance Score":66.9,"Task Completion Rate":76.7,"Workload Score":66.8,"Productivity Score":73.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1159","Employee Name":"Aniket Pillai","Department":"Cyber Security","Job Role":"Identity & Access Manager","Team":"ZeroTrust Identity","Manager":"Ananya Deshmukh","Experience Years":17.2,"Assigned Tasks":55,"Completed Tasks":50,"Pending Tasks":5,"Average Working Hours Per Day":8.9,"Overtime Hours Per Week":5.4,"Absence Days":2,"Employee Engagement Score":87.7,"Performance Score":86.4,"Task Completion Rate":90.9,"Workload Score":52.1,"Productivity Score":95.5,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1160","Employee Name":"Neha Bansal","Department":"Digital Experience","Job Role":"Digital Product Designer","Team":"OmniChannel Portal","Manager":"Vikramaditya Sengupta","Experience Years":15.1,"Assigned Tasks":42,"Completed Tasks":15,"Pending Tasks":27,"Average Working Hours Per Day":7.7,"Overtime Hours Per Week":0,"Absence Days":0,"Employee Engagement Score":90.2,"Performance Score":47.8,"Task Completion Rate":35.7,"Workload Score":73.6,"Productivity Score":39.5,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1161","Employee Name":"Neha Kulkarni","Department":"Engineering Services","Job Role":"Product Lifecycle Consultant","Team":"PLM Modernization","Manager":"Kavita Sundaram","Experience Years":15.9,"Assigned Tasks":28,"Completed Tasks":19,"Pending Tasks":9,"Average Working Hours Per Day":7.5,"Overtime Hours Per Week":0.2,"Absence Days":5,"Employee Engagement Score":43.6,"Performance Score":55.8,"Task Completion Rate":67.9,"Workload Score":32.1,"Productivity Score":66.3,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1162","Employee Name":"Neha Srinivasan","Department":"Cloud & Infrastructure","Job Role":"Cloud Operations Engineer","Team":"CloudOps Alpha","Manager":"Rajeshwar Rao","Experience Years":9.1,"Assigned Tasks":67,"Completed Tasks":31,"Pending Tasks":36,"Average Working Hours Per Day":11.2,"Overtime Hours Per Week":12.1,"Absence Days":9,"Employee Engagement Score":38.3,"Performance Score":39.7,"Task Completion Rate":46.3,"Workload Score":82.5,"Productivity Score":50.9,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1163","Employee Name":"Manish Iyer","Department":"Engineering Services","Job Role":"Embedded Software Engineer","Team":"Smart Edge Mobility","Manager":"Vikramaditya Sengupta","Experience Years":7.2,"Assigned Tasks":52,"Completed Tasks":48,"Pending Tasks":4,"Average Working Hours Per Day":9,"Overtime Hours Per Week":6.2,"Absence Days":0,"Employee Engagement Score":77.9,"Performance Score":79.1,"Task Completion Rate":92.3,"Workload Score":60.8,"Productivity Score":95.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1164","Employee Name":"Divya Srinivasan","Department":"Engineering Services","Job Role":"Product Lifecycle Consultant","Team":"AutoTech Systems","Manager":"Swati Bhasin","Experience Years":12.7,"Assigned Tasks":27,"Completed Tasks":16,"Pending Tasks":11,"Average Working Hours Per Day":7.3,"Overtime Hours Per Week":2.3,"Absence Days":5,"Employee Engagement Score":47.7,"Performance Score":50.1,"Task Completion Rate":59.3,"Workload Score":31.9,"Productivity Score":63.1,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1165","Employee Name":"Aniket Mukherjee","Department":"Cyber Security","Job Role":"Compliance Lead","Team":"ZeroTrust Identity","Manager":"Pooja Hegde","Experience Years":1.5,"Assigned Tasks":31,"Completed Tasks":22,"Pending Tasks":9,"Average Working Hours Per Day":8.2,"Overtime Hours Per Week":3.6,"Absence Days":1,"Employee Engagement Score":65.3,"Performance Score":67.8,"Task Completion Rate":71,"Workload Score":69.3,"Productivity Score":75.5,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1166","Employee Name":"Manish Patel","Department":"Digital Experience","Job Role":"Digital Product Designer","Team":"FinTech Experience","Manager":"Rohan Nambisan","Experience Years":16.1,"Assigned Tasks":71,"Completed Tasks":42,"Pending Tasks":29,"Average Working Hours Per Day":10.3,"Overtime Hours Per Week":16.6,"Absence Days":8,"Employee Engagement Score":44.9,"Performance Score":47.9,"Task Completion Rate":59.2,"Workload Score":85.2,"Productivity Score":56.8,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1167","Employee Name":"Anand Sharma","Department":"Cyber Security","Job Role":"Security Operations Analyst","Team":"CyberShield SOC","Manager":"Sneha Kulkarni","Experience Years":4.7,"Assigned Tasks":29,"Completed Tasks":11,"Pending Tasks":18,"Average Working Hours Per Day":7.8,"Overtime Hours Per Week":0,"Absence Days":5,"Employee Engagement Score":49.1,"Performance Score":39.2,"Task Completion Rate":37.9,"Workload Score":68.1,"Productivity Score":41.3,"Risk Level":"Medium","Reporting Month":"2026-10"},{"Employee ID":"INF-1168","Employee Name":"Vijay Reddy","Department":"Cyber Security","Job Role":"Identity & Access Manager","Team":"SecOps Compliance","Manager":"Swati Bhasin","Experience Years":11.8,"Assigned Tasks":32,"Completed Tasks":19,"Pending Tasks":13,"Average Working Hours Per Day":8.1,"Overtime Hours Per Week":4.2,"Absence Days":4,"Employee Engagement Score":61.6,"Performance Score":59.1,"Task Completion Rate":59.4,"Workload Score":65,"Productivity Score":65.8,"Risk Level":"Medium","Reporting Month":"2026-10"},{"Employee ID":"INF-1169","Employee Name":"Siddharth Mehta","Department":"Engineering Services","Job Role":"Product Lifecycle Consultant","Team":"Smart Edge Mobility","Manager":"Arunachalam Murthy","Experience Years":13,"Assigned Tasks":33,"Completed Tasks":23,"Pending Tasks":10,"Average Working Hours Per Day":8.8,"Overtime Hours Per Week":3.1,"Absence Days":3,"Employee Engagement Score":62.3,"Performance Score":56.3,"Task Completion Rate":69.7,"Workload Score":53.6,"Productivity Score":67.3,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1170","Employee Name":"Kavya Kapoor","Department":"Data & AI","Job Role":"BI Analytics Consultant","Team":"Predictive Analytics Pod","Manager":"Sneha Kulkarni","Experience Years":13.1,"Assigned Tasks":40,"Completed Tasks":30,"Pending Tasks":10,"Average Working Hours Per Day":8.4,"Overtime Hours Per Week":2.2,"Absence Days":2,"Employee Engagement Score":63,"Performance Score":62.6,"Task Completion Rate":75,"Workload Score":51.7,"Productivity Score":77,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1171","Employee Name":"Tanvi Patel","Department":"Digital Experience","Job Role":"Solutions Consultant","Team":"FinTech Experience","Manager":"Arunachalam Murthy","Experience Years":15.6,"Assigned Tasks":50,"Completed Tasks":33,"Pending Tasks":17,"Average Working Hours Per Day":10.4,"Overtime Hours Per Week":23,"Absence Days":7,"Employee Engagement Score":58.2,"Performance Score":59.3,"Task Completion Rate":66,"Workload Score":78.9,"Productivity Score":66.2,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1172","Employee Name":"Gaurav Bose","Department":"Digital Experience","Job Role":"Digital Product Designer","Team":"OmniChannel Portal","Manager":"Sneha Kulkarni","Experience Years":15,"Assigned Tasks":32,"Completed Tasks":26,"Pending Tasks":6,"Average Working Hours Per Day":10.8,"Overtime Hours Per Week":15.7,"Absence Days":4,"Employee Engagement Score":77.7,"Performance Score":72.6,"Task Completion Rate":81.2,"Workload Score":88.6,"Productivity Score":87.9,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1173","Employee Name":"Sachin Kapoor","Department":"Enterprise Application Services","Job Role":"Technical Consultant","Team":"Salesforce Cloud Pod","Manager":"Ananya Deshmukh","Experience Years":7.3,"Assigned Tasks":26,"Completed Tasks":16,"Pending Tasks":10,"Average Working Hours Per Day":7.9,"Overtime Hours Per Week":2.2,"Absence Days":2,"Employee Engagement Score":45.4,"Performance Score":48.9,"Task Completion Rate":61.5,"Workload Score":52,"Productivity Score":63.7,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1174","Employee Name":"Shalini Bansal","Department":"Engineering Services","Job Role":"Embedded Software Engineer","Team":"PLM Modernization","Manager":"Arunachalam Murthy","Experience Years":13.9,"Assigned Tasks":39,"Completed Tasks":35,"Pending Tasks":4,"Average Working Hours Per Day":8.4,"Overtime Hours Per Week":2.2,"Absence Days":1,"Employee Engagement Score":94.2,"Performance Score":75.9,"Task Completion Rate":89.7,"Workload Score":69,"Productivity Score":85.6,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1175","Employee Name":"Bhavik Saxena","Department":"Cyber Security","Job Role":"Cloud Security Architect","Team":"ZeroTrust Identity","Manager":"Ananya Deshmukh","Experience Years":17.6,"Assigned Tasks":47,"Completed Tasks":25,"Pending Tasks":22,"Average Working Hours Per Day":9.8,"Overtime Hours Per Week":21.8,"Absence Days":8,"Employee Engagement Score":36.7,"Performance Score":44.4,"Task Completion Rate":53.2,"Workload Score":79.9,"Productivity Score":57.4,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1176","Employee Name":"Karthik Pandey","Department":"Quality Engineering","Job Role":"Quality Assurance Analyst","Team":"Continuous Quality Pod","Manager":"Vikramaditya Sengupta","Experience Years":8.7,"Assigned Tasks":35,"Completed Tasks":27,"Pending Tasks":8,"Average Working Hours Per Day":8.2,"Overtime Hours Per Week":5.6,"Absence Days":3,"Employee Engagement Score":78.3,"Performance Score":69.1,"Task Completion Rate":77.1,"Workload Score":73.7,"Productivity Score":80.8,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1177","Employee Name":"Varun Kulkarni","Department":"Data & AI","Job Role":"BI Analytics Consultant","Team":"BI Modernization","Manager":"Sneha Kulkarni","Experience Years":15.5,"Assigned Tasks":64,"Completed Tasks":29,"Pending Tasks":35,"Average Working Hours Per Day":10.3,"Overtime Hours Per Week":20.5,"Absence Days":5,"Employee Engagement Score":57.6,"Performance Score":44,"Task Completion Rate":45.3,"Workload Score":94.2,"Productivity Score":43,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1178","Employee Name":"Meera Joshi","Department":"Cloud & Infrastructure","Job Role":"Systems Architect","Team":"Hybrid Platform Team","Manager":"Kavita Sundaram","Experience Years":1.5,"Assigned Tasks":46,"Completed Tasks":18,"Pending Tasks":28,"Average Working Hours Per Day":8,"Overtime Hours Per Week":0,"Absence Days":0,"Employee Engagement Score":90.9,"Performance Score":47.4,"Task Completion Rate":39.1,"Workload Score":73.2,"Productivity Score":39.6,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1179","Employee Name":"Shreya Iyer","Department":"Cyber Security","Job Role":"Compliance Lead","Team":"ZeroTrust Identity","Manager":"Priya Venkatesh","Experience Years":1.4,"Assigned Tasks":73,"Completed Tasks":68,"Pending Tasks":5,"Average Working Hours Per Day":10.4,"Overtime Hours Per Week":15,"Absence Days":3,"Employee Engagement Score":56.8,"Performance Score":70.5,"Task Completion Rate":93.2,"Workload Score":86.7,"Productivity Score":92.4,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1180","Employee Name":"Deepa Menon","Department":"Digital Experience","Job Role":"Full Stack Developer","Team":"OmniChannel Portal","Manager":"Sneha Kulkarni","Experience Years":8.6,"Assigned Tasks":60,"Completed Tasks":54,"Pending Tasks":6,"Average Working Hours Per Day":10.5,"Overtime Hours Per Week":16.5,"Absence Days":3,"Employee Engagement Score":49.9,"Performance Score":76.4,"Task Completion Rate":90,"Workload Score":85,"Productivity Score":92.2,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1181","Employee Name":"Aditi Pillai","Department":"Quality Engineering","Job Role":"SDET Lead","Team":"API Test Labs","Manager":"Rohan Nambisan","Experience Years":14.3,"Assigned Tasks":32,"Completed Tasks":14,"Pending Tasks":18,"Average Working Hours Per Day":7.8,"Overtime Hours Per Week":0,"Absence Days":2,"Employee Engagement Score":79.4,"Performance Score":54.3,"Task Completion Rate":43.8,"Workload Score":75,"Productivity Score":47.2,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1182","Employee Name":"Siddharth Mukherjee","Department":"Enterprise Application Services","Job Role":"Technical Consultant","Team":"SAP Core Modernization","Manager":"Rajeshwar Rao","Experience Years":10.8,"Assigned Tasks":20,"Completed Tasks":11,"Pending Tasks":9,"Average Working Hours Per Day":8,"Overtime Hours Per Week":3,"Absence Days":4,"Employee Engagement Score":53,"Performance Score":44.1,"Task Completion Rate":55,"Workload Score":38.5,"Productivity Score":53.2,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1183","Employee Name":"Sachin Hegde","Department":"Digital Experience","Job Role":"Solutions Consultant","Team":"Retail Digital Studio","Manager":"Ananya Deshmukh","Experience Years":10.2,"Assigned Tasks":45,"Completed Tasks":25,"Pending Tasks":20,"Average Working Hours Per Day":9.6,"Overtime Hours Per Week":19.2,"Absence Days":7,"Employee Engagement Score":35,"Performance Score":42,"Task Completion Rate":55.6,"Workload Score":78.8,"Productivity Score":55.7,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1184","Employee Name":"Chetan Kapoor","Department":"Quality Engineering","Job Role":"SDET Lead","Team":"Automation Matrix","Manager":"Arunachalam Murthy","Experience Years":3.5,"Assigned Tasks":36,"Completed Tasks":27,"Pending Tasks":9,"Average Working Hours Per Day":8.1,"Overtime Hours Per Week":3.2,"Absence Days":4,"Employee Engagement Score":66.7,"Performance Score":66.3,"Task Completion Rate":75,"Workload Score":53.1,"Productivity Score":78.4,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1185","Employee Name":"Chaitanya Mehta","Department":"Data & AI","Job Role":"AI Research Associate","Team":"Data Lakehouse Ops","Manager":"Kavita Sundaram","Experience Years":13,"Assigned Tasks":53,"Completed Tasks":44,"Pending Tasks":9,"Average Working Hours Per Day":8.7,"Overtime Hours Per Week":3.1,"Absence Days":2,"Employee Engagement Score":78.5,"Performance Score":75.6,"Task Completion Rate":83,"Workload Score":72.5,"Productivity Score":88.6,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1186","Employee Name":"Aarav Agarwal","Department":"Cyber Security","Job Role":"Cloud Security Architect","Team":"CyberShield SOC","Manager":"Kavita Sundaram","Experience Years":11.2,"Assigned Tasks":32,"Completed Tasks":17,"Pending Tasks":15,"Average Working Hours Per Day":7.4,"Overtime Hours Per Week":1.7,"Absence Days":2,"Employee Engagement Score":47.3,"Performance Score":54,"Task Completion Rate":53.1,"Workload Score":51.3,"Productivity Score":58.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1187","Employee Name":"Abhishek Iyer","Department":"Quality Engineering","Job Role":"SDET Lead","Team":"API Test Labs","Manager":"Arunachalam Murthy","Experience Years":5.5,"Assigned Tasks":32,"Completed Tasks":25,"Pending Tasks":7,"Average Working Hours Per Day":8.3,"Overtime Hours Per Week":1.6,"Absence Days":3,"Employee Engagement Score":83.8,"Performance Score":75.3,"Task Completion Rate":78.1,"Workload Score":53.6,"Productivity Score":78.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1188","Employee Name":"Manish Menon","Department":"Cyber Security","Job Role":"Cloud Security Architect","Team":"CyberShield SOC","Manager":"Ananya Deshmukh","Experience Years":14.4,"Assigned Tasks":26,"Completed Tasks":23,"Pending Tasks":3,"Average Working Hours Per Day":10.6,"Overtime Hours Per Week":16.3,"Absence Days":1,"Employee Engagement Score":65.7,"Performance Score":71.6,"Task Completion Rate":88.5,"Workload Score":92.8,"Productivity Score":89.9,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1189","Employee Name":"Sanjay Mishra","Department":"Data & AI","Job Role":"Data Engineer","Team":"BI Modernization","Manager":"Gautam Subramanian","Experience Years":3.8,"Assigned Tasks":21,"Completed Tasks":11,"Pending Tasks":10,"Average Working Hours Per Day":7.3,"Overtime Hours Per Week":0.6,"Absence Days":6,"Employee Engagement Score":52.2,"Performance Score":48.6,"Task Completion Rate":52.4,"Workload Score":33.5,"Productivity Score":57.4,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1190","Employee Name":"Amrita Pillai","Department":"Cyber Security","Job Role":"Compliance Lead","Team":"SecOps Compliance","Manager":"Kavita Sundaram","Experience Years":1.9,"Assigned Tasks":60,"Completed Tasks":27,"Pending Tasks":33,"Average Working Hours Per Day":11.6,"Overtime Hours Per Week":19.5,"Absence Days":4,"Employee Engagement Score":35.7,"Performance Score":43.4,"Task Completion Rate":45,"Workload Score":79.8,"Productivity Score":47.2,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1191","Employee Name":"Pranav Deshpande","Department":"Engineering Services","Job Role":"IoT Systems Engineer","Team":"Smart Edge Mobility","Manager":"Gautam Subramanian","Experience Years":10.3,"Assigned Tasks":53,"Completed Tasks":29,"Pending Tasks":24,"Average Working Hours Per Day":10.4,"Overtime Hours Per Week":17.3,"Absence Days":9,"Employee Engagement Score":42.1,"Performance Score":41.7,"Task Completion Rate":54.7,"Workload Score":95.7,"Productivity Score":53.4,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1192","Employee Name":"Siddharth Patel","Department":"Cloud & Infrastructure","Job Role":"Systems Architect","Team":"SRE Velocity","Manager":"Swati Bhasin","Experience Years":4.9,"Assigned Tasks":66,"Completed Tasks":44,"Pending Tasks":22,"Average Working Hours Per Day":10.8,"Overtime Hours Per Week":23.6,"Absence Days":4,"Employee Engagement Score":47.8,"Performance Score":50.5,"Task Completion Rate":66.7,"Workload Score":85.7,"Productivity Score":64.5,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1193","Employee Name":"Suresh Verma","Department":"Cyber Security","Job Role":"Compliance Lead","Team":"Threat Intelligence Pod","Manager":"Priya Venkatesh","Experience Years":17.1,"Assigned Tasks":38,"Completed Tasks":28,"Pending Tasks":10,"Average Working Hours Per Day":8.2,"Overtime Hours Per Week":2.3,"Absence Days":3,"Employee Engagement Score":83.5,"Performance Score":75.7,"Task Completion Rate":73.7,"Workload Score":73.8,"Productivity Score":80.3,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1194","Employee Name":"Sangeeta Chatterjee","Department":"Enterprise Application Services","Job Role":"SAP/ERP Consultant","Team":"SAP Core Modernization","Manager":"Deepak Nambiar","Experience Years":10.5,"Assigned Tasks":32,"Completed Tasks":29,"Pending Tasks":3,"Average Working Hours Per Day":8.6,"Overtime Hours Per Week":6.5,"Absence Days":3,"Employee Engagement Score":87.5,"Performance Score":79,"Task Completion Rate":90.6,"Workload Score":71.7,"Productivity Score":92.2,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1195","Employee Name":"Sameer Malhotra","Department":"Cloud & Infrastructure","Job Role":"Cloud Operations Engineer","Team":"CloudOps Alpha","Manager":"Sneha Kulkarni","Experience Years":15.7,"Assigned Tasks":27,"Completed Tasks":17,"Pending Tasks":10,"Average Working Hours Per Day":7.4,"Overtime Hours Per Week":2,"Absence Days":4,"Employee Engagement Score":40.8,"Performance Score":50.8,"Task Completion Rate":63,"Workload Score":49.3,"Productivity Score":61,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1196","Employee Name":"Meera Verma","Department":"Data & AI","Job Role":"BI Analytics Consultant","Team":"Enterprise GenAI Lab","Manager":"Arunachalam Murthy","Experience Years":13.7,"Assigned Tasks":22,"Completed Tasks":12,"Pending Tasks":10,"Average Working Hours Per Day":7.2,"Overtime Hours Per Week":2.5,"Absence Days":2,"Employee Engagement Score":58.5,"Performance Score":48.6,"Task Completion Rate":54.5,"Workload Score":49.7,"Productivity Score":55.6,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1197","Employee Name":"Tarun Bhattacharya","Department":"Quality Engineering","Job Role":"SDET Lead","Team":"Continuous Quality Pod","Manager":"Pooja Hegde","Experience Years":8.1,"Assigned Tasks":40,"Completed Tasks":29,"Pending Tasks":11,"Average Working Hours Per Day":8.2,"Overtime Hours Per Week":4.9,"Absence Days":1,"Employee Engagement Score":75.6,"Performance Score":65.3,"Task Completion Rate":72.5,"Workload Score":54.1,"Productivity Score":75.6,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1198","Employee Name":"Rahul Pillai","Department":"Digital Experience","Job Role":"Solutions Consultant","Team":"FinTech Experience","Manager":"Kavita Sundaram","Experience Years":4.3,"Assigned Tasks":36,"Completed Tasks":25,"Pending Tasks":11,"Average Working Hours Per Day":8.2,"Overtime Hours Per Week":2.7,"Absence Days":4,"Employee Engagement Score":64.9,"Performance Score":66,"Task Completion Rate":69.4,"Workload Score":68.4,"Productivity Score":74.9,"Risk Level":"Low","Reporting Month":"2026-10"},{"Employee ID":"INF-1199","Employee Name":"Aditi Mukherjee","Department":"Enterprise Application Services","Job Role":"Enterprise Solution Lead","Team":"Integration Nexus","Manager":"Kavita Sundaram","Experience Years":17.3,"Assigned Tasks":40,"Completed Tasks":32,"Pending Tasks":8,"Average Working Hours Per Day":10.7,"Overtime Hours Per Week":19.1,"Absence Days":2,"Employee Engagement Score":88.8,"Performance Score":76.5,"Task Completion Rate":80,"Workload Score":84.7,"Productivity Score":86.9,"Risk Level":"High","Reporting Month":"2026-10"},{"Employee ID":"INF-1200","Employee Name":"Shreya Choudhury","Department":"Cyber Security","Job Role":"Security Operations Analyst","Team":"CyberShield SOC","Manager":"Ananya Deshmukh","Experience Years":16.5,"Assigned Tasks":34,"Completed Tasks":24,"Pending Tasks":10,"Average Working Hours Per Day":8,"Overtime Hours Per Week":1.5,"Absence Days":3,"Employee Engagement Score":72.8,"Performance Score":66,"Task Completion Rate":70.6,"Workload Score":63.2,"Productivity Score":75,"Risk Level":"Low","Reporting Month":"2026-10"}],"monthlyTrends":[{"Month":"2025-11","Average Productivity":76.8,"Average Working Hours":8.4,"Average Overtime":4.2,"Average Engagement":74.7,"Task Completion Rate":74.3,"Absenteeism Rate":13.6,"Average Workload Score":59},{"Month":"2025-12","Average Productivity":76.4,"Average Working Hours":8.3,"Average Overtime":3.9,"Average Engagement":75.4,"Task Completion Rate":74,"Absenteeism Rate":15.9,"Average Workload Score":57.8},{"Month":"2026-01","Average Productivity":76,"Average Working Hours":8.6,"Average Overtime":5,"Average Engagement":73.5,"Task Completion Rate":73.6,"Absenteeism Rate":14.2,"Average Workload Score":60.5},{"Month":"2026-02","Average Productivity":75.2,"Average Working Hours":8.7,"Average Overtime":5.6,"Average Engagement":72.3,"Task Completion Rate":72.7,"Absenteeism Rate":14.4,"Average Workload Score":61.8},{"Month":"2026-03","Average Productivity":74.4,"Average Working Hours":8.8,"Average Overtime":6.5,"Average Engagement":70.8,"Task Completion Rate":71.9,"Absenteeism Rate":14.8,"Average Workload Score":63.5},{"Month":"2026-04","Average Productivity":73.1,"Average Working Hours":9,"Average Overtime":7.6,"Average Engagement":69.1,"Task Completion Rate":70.8,"Absenteeism Rate":15.1,"Average Workload Score":66},{"Month":"2026-05","Average Productivity":72.4,"Average Working Hours":9.2,"Average Overtime":8.2,"Average Engagement":67.8,"Task Completion Rate":70,"Absenteeism Rate":15.6,"Average Workload Score":67.5},{"Month":"2026-06","Average Productivity":71.5,"Average Working Hours":9.3,"Average Overtime":8.8,"Average Engagement":66.8,"Task Completion Rate":69.2,"Absenteeism Rate":16,"Average Workload Score":68.8},{"Month":"2026-07","Average Productivity":70.8,"Average Working Hours":9.4,"Average Overtime":9.3,"Average Engagement":65.5,"Task Completion Rate":68.3,"Absenteeism Rate":16.3,"Average Workload Score":70},{"Month":"2026-08","Average Productivity":70.2,"Average Working Hours":9.5,"Average Overtime":9.7,"Average Engagement":64.7,"Task Completion Rate":67.7,"Absenteeism Rate":16.6,"Average Workload Score":71.2},{"Month":"2026-09","Average Productivity":69.8,"Average Working Hours":9.6,"Average Overtime":10,"Average Engagement":64.1,"Task Completion Rate":67.2,"Absenteeism Rate":16.9,"Average Workload Score":71.8},{"Month":"2026-10","Average Productivity":70.6,"Average Working Hours":9,"Average Overtime":7.4,"Average Engagement":66.3,"Task Completion Rate":68.8,"Absenteeism Rate":15.4,"Average Workload Score":66}],"departmentMetrics":[{"Department":"Cloud & Infrastructure","Employee Count":24,"Average Productivity":70.1,"Average Workload Score":71,"Average Overtime":8.2,"Average Engagement":68.3,"Absenteeism Rate":16.5,"Task Completion Rate":69.2},{"Department":"Digital Experience","Employee Count":31,"Average Productivity":67.5,"Average Workload Score":68.8,"Average Overtime":9.4,"Average Engagement":62.1,"Absenteeism Rate":16.4,"Task Completion Rate":65.9},{"Department":"Enterprise Application Services","Employee Count":23,"Average Productivity":70.8,"Average Workload Score":66,"Average Overtime":7.4,"Average Engagement":66.2,"Absenteeism Rate":12.3,"Task Completion Rate":68.2},{"Department":"Data & AI","Employee Count":25,"Average Productivity":71.5,"Average Workload Score":64,"Average Overtime":6.4,"Average Engagement":68.8,"Absenteeism Rate":15.6,"Task Completion Rate":69.1},{"Department":"Cyber Security","Employee Count":32,"Average Productivity":70.2,"Average Workload Score":67.8,"Average Overtime":7.2,"Average Engagement":65.6,"Absenteeism Rate":14.3,"Task Completion Rate":68.2},{"Department":"Engineering Services","Employee Count":29,"Average Productivity":71,"Average Workload Score":62.2,"Average Overtime":7.7,"Average Engagement":63.8,"Absenteeism Rate":18.5,"Task Completion Rate":69.8},{"Department":"Quality Engineering","Employee Count":36,"Average Productivity":72.7,"Average Workload Score":63.3,"Average Overtime":6,"Average Engagement":69.7,"Absenteeism Rate":14.1,"Task Completion Rate":70.8}],"dataDictionary":[{"Column Name":"Employee ID","Worksheet":"Employees","Data Type":"String (Identifier)","Definition":"Unique fictional employee identifier code prefixed with INF-","Score / Value Range":"INF-1001 to INF-1200","Formula / Derivation":"Sequential alphanumeric formatting"},{"Column Name":"Employee Name","Worksheet":"Employees","Data Type":"String","Definition":"Fictional employee full name (synthetic data for simulation only)","Score / Value Range":"Fictional first & last names","Formula / Derivation":"Random combination from synthetic name repository"},{"Column Name":"Department","Worksheet":"Employees","Data Type":"Categorical String","Definition":"Enterprise organizational service unit / business practice","Score / Value Range":"7 Core Practice Units (Cloud, Digital, EAS, Data/AI, Cyber, Eng, QE)","Formula / Derivation":"Assigned organizational unit"},{"Column Name":"Job Role","Worksheet":"Employees","Data Type":"Categorical String","Definition":"Professional technical designation / role description","Score / Value Range":"Standard enterprise delivery roles","Formula / Derivation":"Role tier within relevant service practice"},{"Column Name":"Team","Worksheet":"Employees","Data Type":"Categorical String","Definition":"Project team / delivery pod assignment","Score / Value Range":"Delivery pod identifier","Formula / Derivation":"Functional team assignment"},{"Column Name":"Manager","Worksheet":"Employees","Data Type":"String","Definition":"Designated project manager / delivery director","Score / Value Range":"12 Fictional delivery leads","Formula / Derivation":"Assigned reporting manager"},{"Column Name":"Experience Years","Worksheet":"Employees","Data Type":"Numeric (Float)","Definition":"Total career professional experience in years","Score / Value Range":"1.0 to 18.0 years","Formula / Derivation":"Synthetic continuous variable"},{"Column Name":"Assigned Tasks","Worksheet":"Employees","Data Type":"Integer","Definition":"Total number of sprint / project work tickets assigned in reporting month","Score / Value Range":"15 to 80 tasks","Formula / Derivation":"Work package assignment"},{"Column Name":"Completed Tasks","Worksheet":"Employees","Data Type":"Integer","Definition":"Number of work tickets verified as completed and delivered","Score / Value Range":"0 to Assigned Tasks","Formula / Derivation":"Verified delivered tasks (always <= Assigned Tasks)"},{"Column Name":"Pending Tasks","Worksheet":"Employees","Data Type":"Integer","Definition":"Tasks in progress, blocked, or carried forward to next cycle","Score / Value Range":"0 to Assigned Tasks","Formula / Derivation":"Pending Tasks = Assigned Tasks - Completed Tasks"},{"Column Name":"Average Working Hours Per Day","Worksheet":"Employees","Data Type":"Numeric (Float)","Definition":"Mean daily active system / project logged work hours","Score / Value Range":"7.0 to 12.0 hours/day","Formula / Derivation":"Total logged monthly hours / active working days"},{"Column Name":"Overtime Hours Per Week","Worksheet":"Employees","Data Type":"Numeric (Float)","Definition":"Weekly hours logged beyond standard 40-hour contract baseline","Score / Value Range":"0.0 to 25.0 hours/week","Formula / Derivation":"Max(0, (Weekly Logged Hours - 40.0))"},{"Column Name":"Absence Days","Worksheet":"Employees","Data Type":"Integer","Definition":"Total unplanned or planned absence days during reporting month","Score / Value Range":"0 to 12 days","Formula / Derivation":"Timesheet recorded leave entries"},{"Column Name":"Employee Engagement Score","Worksheet":"Employees","Data Type":"Numeric (Float)","Definition":"Composite index reflecting sentiment, pulse survey feedback, and participation","Score / Value Range":"0.0 to 100.0","Formula / Derivation":"Normalized pulse survey and engagement sentiment index"},{"Column Name":"Performance Score","Worksheet":"Employees","Data Type":"Numeric (Float)","Definition":"Quality and deliverable review score evaluated by project leads","Score / Value Range":"0.0 to 100.0","Formula / Derivation":"Weighted score based on code review, delivery milestones, and quality"},{"Column Name":"Task Completion Rate","Worksheet":"Employees","Data Type":"Numeric Percentage","Definition":"Proportion of assigned tasks completed during reporting cycle","Score / Value Range":"0.0% to 100.0%","Formula / Derivation":"(Completed Tasks / Assigned Tasks) * 100"},{"Column Name":"Workload Score","Worksheet":"Employees","Data Type":"Numeric (Float)","Definition":"Normalized metric of workload volume, complexity, and active commitments","Score / Value Range":"0.0 to 100.0","Formula / Derivation":"Composite index of assigned story points, context switches, and hours"},{"Column Name":"Productivity Score","Worksheet":"Employees","Data Type":"Numeric (Float)","Definition":"Effective value delivered per unit of effort and time invested","Score / Value Range":"0.0 to 100.0","Formula / Derivation":"Weighted function: 0.50*(Task Completion) + 0.35*(Performance) + 0.15*(Velocity/Hour)"},{"Column Name":"Risk Level","Worksheet":"Employees","Data Type":"Categorical ('Low' | 'Medium' | 'High')","Definition":"Operational Workload Risk classification flag indicating intervention priority","Score / Value Range":"Low (Score < 42), Medium (42 <= Score < 65), High (Score >= 65)","Formula / Derivation":"Weighted multi-factor operational bottleneck scoring algorithm"},{"Column Name":"Reporting Month","Worksheet":"Employees","Data Type":"ISO Date String (YYYY-MM)","Definition":"Monthly analytics reporting snapshot period","Score / Value Range":"2026-10","Formula / Derivation":"Snapshot period key"}]};
+    let currentEmployees = [...INITIAL_DATASET.employees];
+    let filteredEmployees = [...currentEmployees];
+    let sortColumn = 'Productivity Score';
+    let sortAsc = false;
+    let currentPage = 1;
+    let pageSize = 25;
+
+    // Initialize application
+    document.addEventListener('DOMContentLoaded', () => {
+      initFilterDropdowns();
+      initTheme();
+      initDataDictionary();
+      applyFilters();
+      renderAllCharts();
+      setupEventListeners();
+    });
+
+    function initTheme() {
+      const saved = localStorage.getItem('workpulse_theme') || 'dark';
+      if (saved === 'light') {
+        document.documentElement.classList.add('light');
+        document.body.style.setProperty('--background', '#f8fafc');
+        document.body.style.setProperty('--foreground', '#0f172a');
+        document.body.style.setProperty('--card', '#ffffff');
+        document.body.style.setProperty('--border', '#e2e8f0');
+        document.body.style.setProperty('--muted-foreground', '#64748b');
+      } else {
+        document.documentElement.classList.remove('light');
+        document.body.style.setProperty('--background', '#0f172a');
+        document.body.style.setProperty('--foreground', '#f8fafc');
+        document.body.style.setProperty('--card', '#1e293b');
+        document.body.style.setProperty('--border', '#334155');
+        document.body.style.setProperty('--muted-foreground', '#94a3b8');
+      }
+    }
+
+    function toggleTheme() {
+      const isLight = document.documentElement.classList.contains('light');
+      localStorage.setItem('workpulse_theme', isLight ? 'dark' : 'light');
+      initTheme();
+      renderAllCharts();
+    }
+
+    function initFilterDropdowns() {
+      const deptSelect = document.getElementById('filter-dept');
+      const depts = [...new Set(currentEmployees.map(e => e["Department"]))].sort();
+      depts.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d;
+        deptSelect.appendChild(opt);
+      });
+
+      updateTeamDropdown();
+    }
+
+    function updateTeamDropdown() {
+      const dept = document.getElementById('filter-dept').value;
+      const teamSelect = document.getElementById('filter-team');
+      teamSelect.innerHTML = '<option value="all">All Teams</option>';
+      const teams = [...new Set(currentEmployees
+        .filter(e => dept === 'all' || e["Department"] === dept)
+        .map(e => e["Team"]))].sort();
+
+      teams.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        teamSelect.appendChild(opt);
+      });
+    }
+
+    function applyFilters() {
+      const query = document.getElementById('search-input').value.toLowerCase().trim();
+      const month = document.getElementById('filter-month').value;
+      const dept = document.getElementById('filter-dept').value;
+      const team = document.getElementById('filter-team').value;
+      const risk = document.getElementById('filter-risk').value;
+
+      filteredEmployees = currentEmployees.filter(e => {
+        if (month !== 'all' && e["Reporting Month"] !== month) return false;
+        if (dept !== 'all' && e["Department"] !== dept) return false;
+        if (team !== 'all' && e["Team"] !== team) return false;
+        if (risk !== 'all' && e["Risk Level"] !== risk) return false;
+        if (query) {
+          const matchId = e["Employee ID"].toLowerCase().includes(query);
+          const matchName = e["Employee Name"].toLowerCase().includes(query);
+          const matchRole = e["Job Role"].toLowerCase().includes(query);
+          const matchMgr = e["Manager"].toLowerCase().includes(query);
+          if (!matchId && !matchName && !matchRole && !matchMgr) return false;
+        }
+        return true;
+      });
+
+      document.getElementById('record-count-badge').textContent = filteredEmployees.length;
+      currentPage = 1;
+      renderKPIs();
+      renderEmployeeTable();
+      renderOverviewAlerts();
+      renderRecommendations();
+      renderDeptRiskTable();
+      renderAllCharts();
+    }
+
+    function renderKPIs() {
+      const count = filteredEmployees.length;
+      const avgProd = count ? (filteredEmployees.reduce((s, e) => s + e["Productivity Score"], 0) / count).toFixed(1) : 0;
+      const avgOT = count ? (filteredEmployees.reduce((s, e) => s + e["Overtime Hours Per Week"], 0) / count).toFixed(1) : 0;
+      const avgComp = count ? (filteredEmployees.reduce((s, e) => s + e["Task Completion Rate"], 0) / count).toFixed(1) : 0;
+      const avgEng = count ? (filteredEmployees.reduce((s, e) => s + e["Employee Engagement Score"], 0) / count).toFixed(1) : 0;
+      const highRisk = filteredEmployees.filter(e => e["Risk Level"] === 'High').length;
+      const highRiskPct = count ? ((highRisk / count) * 100).toFixed(1) : 0;
+
+      document.getElementById('sidebar-risk-badge').textContent = highRisk;
+
+      const kpis = [
+        { label: 'Total Employees', val: count, sub: 'Filtered headcount', delta: null },
+        { label: 'Avg Productivity', val: avgProd, unit: '/100', sub: 'Velocity index', delta: '-1.5 MoM', bad: true },
+        { label: 'Avg Weekly OT', val: avgOT + ' hrs', sub: 'Above 40h standard', delta: '+2.6 MoM', bad: true },
+        { label: 'Task Completion', val: avgComp + '%', sub: 'Sprint ticket delivery', delta: '-1.6% MoM', bad: true },
+        { label: 'Avg Engagement', val: avgEng, unit: '/100', sub: 'Pulse sentiment', delta: '-2.2 MoM', bad: true },
+        { label: 'High Workload Risk', val: highRisk, unit: '(' + highRiskPct + '%)', sub: 'Intervention queue', delta: 'Requires action', bad: true },
+      ];
+
+      const container = document.getElementById('kpi-grid');
+      container.innerHTML = kpis.map(k => `
+        <div class="p-3.5 rounded-2xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] shadow-sm">
+          <div class="text-[11px] font-semibold text-[var(--muted-foreground,#94a3b8)] truncate">${k.label}</div>
+          <div class="text-xl font-black mt-1 text-[var(--foreground,#f8fafc)]">
+            ${k.val} <span class="text-xs font-normal text-[var(--muted-foreground,#94a3b8)]">${k.unit || ''}</span>
+          </div>
+          <div class="text-[10px] mt-1 flex items-center justify-between">
+            <span class="text-[var(--muted-foreground,#94a3b8)]">${k.sub}</span>
+            ${k.delta ? `<span class="font-bold ${k.bad ? 'text-amber-400' : 'text-emerald-400'}">${k.delta}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderEmployeeTable() {
+      const sorted = [...filteredEmployees].sort((a, b) => {
+        let aVal = a[sortColumn];
+        let bVal = b[sortColumn];
+        if (sortColumn === 'Risk Level') {
+          const order = { High: 3, Medium: 2, Low: 1 };
+          aVal = order[aVal] || 0;
+          bVal = order[bVal] || 0;
+        }
+        if (typeof aVal === 'string') return sortAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        return sortAsc ? aVal - bVal : bVal - aVal;
+      });
+
+      const start = (currentPage - 1) * pageSize;
+      const paginated = sorted.slice(start, start + pageSize);
+
+      const tbody = document.getElementById('employee-table-body');
+      if (paginated.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="py-8 text-center text-[var(--muted-foreground,#94a3b8)]">No records match the current filters.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = paginated.map(e => `
+        <tr onclick="openEmployeeModal('${e["Employee ID"]}')" class="hover:bg-blue-500/10 cursor-pointer transition">
+          <td class="py-2.5 px-3.5 font-mono text-[var(--muted-foreground,#94a3b8)]">${e["Employee ID"]}</td>
+          <td class="py-2.5 px-3.5">
+            <div class="font-bold text-[var(--foreground,#f8fafc)]">${e["Employee Name"]}</div>
+            <div class="text-[10px] text-[var(--muted-foreground,#94a3b8)]">${e["Job Role"]}</div>
+          </td>
+          <td class="py-2.5 px-3.5">
+            <div>${e["Department"]}</div>
+            <div class="text-[10px] text-[var(--muted-foreground,#94a3b8)]">${e["Team"]}</div>
+          </td>
+          <td class="py-2.5 px-3.5 text-right font-bold">${e["Productivity Score"]}</td>
+          <td class="py-2.5 px-3.5 text-right ${e["Workload Score"] >= 80 ? 'text-rose-400 font-bold' : ''}">${e["Workload Score"]}</td>
+          <td class="py-2.5 px-3.5 text-right ${e["Overtime Hours Per Week"] >= 10 ? 'text-amber-400 font-bold' : ''}">${e["Overtime Hours Per Week"]}h</td>
+          <td class="py-2.5 px-3.5 text-right">${e["Employee Engagement Score"]}</td>
+          <td class="py-2.5 px-3.5 text-right">${e["Task Completion Rate"]}%</td>
+          <td class="py-2.5 px-3.5 text-center">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              e["Risk Level"] === 'High' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
+              e["Risk Level"] === 'Medium' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+              'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+            }">${e["Risk Level"]}</span>
+          </td>
+          <td class="py-2.5 px-3.5 text-center text-blue-400 font-semibold hover:underline">Inspect</td>
+        </tr>
+      `).join('');
+
+      const totalPages = Math.ceil(filteredEmployees.length / pageSize) || 1;
+      document.getElementById('page-number-display').textContent = `Page ${currentPage} of ${totalPages}`;
+      document.getElementById('pagination-info').textContent = `(${start + 1}-${Math.min(start + pageSize, filteredEmployees.length)} of ${filteredEmployees.length})`;
+      document.getElementById('prev-page-btn').disabled = currentPage <= 1;
+      document.getElementById('next-page-btn').disabled = currentPage >= totalPages;
+    }
+
+    function sortTable(col) {
+      if (sortColumn === col) sortAsc = !sortAsc;
+      else { sortColumn = col; sortAsc = false; }
+      renderEmployeeTable();
+    }
+
+    function openEmployeeModal(empId) {
+      const emp = currentEmployees.find(e => e["Employee ID"] === empId);
+      if (!emp) return;
+
+      document.getElementById('modal-emp-name').textContent = emp["Employee Name"];
+      document.getElementById('modal-emp-id').textContent = emp["Employee ID"];
+      document.getElementById('modal-emp-role').textContent = `${emp["Job Role"]} • ${emp["Department"]} (${emp["Team"]}) | Mgr: ${emp["Manager"]}`;
+
+      const riskBadge = document.getElementById('modal-emp-risk');
+      riskBadge.textContent = emp["Risk Level"] + ' Workload Risk';
+      riskBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold ' + (
+        emp["Risk Level"] === 'High' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
+        emp["Risk Level"] === 'Medium' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+        'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+      );
+
+      document.getElementById('modal-prod').textContent = emp["Productivity Score"] + '/100';
+      document.getElementById('modal-wl').textContent = emp["Workload Score"] + '/100';
+      document.getElementById('modal-ot').textContent = emp["Overtime Hours Per Week"] + ' hrs/wk';
+      document.getElementById('modal-eng').textContent = emp["Employee Engagement Score"] + '/100';
+
+      // Formula breakdown
+      const normWl = emp["Workload Score"];
+      const normOt = Math.min(100, (emp["Overtime Hours Per Week"] / 20) * 100);
+      const normEng = Math.max(0, 100 - emp["Employee Engagement Score"]);
+      const normProd = Math.max(0, 100 - emp["Productivity Score"]);
+      const normAbs = Math.min(100, (emp["Absence Days"] / 8) * 100);
+
+      const comp = (0.30 * normWl + 0.25 * normOt + 0.20 * normEng + 0.15 * normProd + 0.10 * normAbs).toFixed(1);
+      document.getElementById('modal-composite-score').textContent = `Composite: ${comp}/100`;
+
+      const factorsList = document.getElementById('modal-factors-list');
+      factorsList.innerHTML = `
+        <div class="flex justify-between"><span>Workload Volume (30% wt): ${normWl} score</span><span class="font-bold">+${(normWl*0.3).toFixed(1)} pts</span></div>
+        <div class="flex justify-between"><span>Overtime Stress (25% wt): ${emp["Overtime Hours Per Week"]} hrs/wk</span><span class="font-bold">+${(normOt*0.25).toFixed(1)} pts</span></div>
+        <div class="flex justify-between"><span>Disengagement Inversion (20% wt): ${emp["Employee Engagement Score"]}/100</span><span class="font-bold">+${(normEng*0.2).toFixed(1)} pts</span></div>
+        <div class="flex justify-between"><span>Productivity Gap (15% wt): ${emp["Productivity Score"]}/100</span><span class="font-bold">+${(normProd*0.15).toFixed(1)} pts</span></div>
+        <div class="flex justify-between"><span>Absenteeism Exposure (10% wt): ${emp["Absence Days"]} days</span><span class="font-bold">+${(normAbs*0.1).toFixed(1)} pts</span></div>
+      `;
+
+      let action = "Maintain standard delivery cadence. No immediate workload intervention required.";
+      if (emp["Risk Level"] === 'High') {
+        if (emp["Overtime Hours Per Week"] > 10) action = "Immediate capacity relief: Cap weekly overtime to <4h, re-scope active sprint commitments, and reassign non-critical pending tasks.";
+        else if (emp["Employee Engagement Score"] < 50) action = "Managerial 1-on-1 check-in recommended to explore project blockers, context-switch fatigue, and deliverable ambiguity.";
+        else action = "Review sprint ticket distribution across pod to avoid single-engineer delivery dependency bottlenecks.";
+      }
+      document.getElementById('modal-action').textContent = action;
+
+      document.getElementById('employee-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('employee-modal').classList.add('hidden');
+    }
+
+    function renderOverviewAlerts() {
+      const container = document.getElementById('overview-alerts-container');
+      const alerts = [
+        {
+          title: "Overtime-Productivity Decoupling in Core Delivery",
+          scope: "CloudOps & Integration Pods",
+          desc: "Engineers logging >12h/week overtime average 15.4% lower task completion due to fatigue-induced rework.",
+          act: "Enforce a temporary 4-hour weekly overtime cap and re-scope sprint commitments."
+        },
+        {
+          title: "High Work-in-Progress (WIP) Ticket Accumulation",
+          scope: "Digital Experience & FinTech",
+          desc: "Average pending tasks per engineer exceeds 14 tickets, indicating blocked upstream dependencies.",
+          act: "Conduct backlog triage and enforce a strict WIP limit of 3 concurrent tickets per engineer."
+        }
+      ];
+
+      container.innerHTML = alerts.map(a => `
+        <div class="p-3.5 rounded-2xl bg-[var(--background,#0f172a)] border border-[var(--border,#334155)] space-y-1.5 text-xs">
+          <div class="flex justify-between font-bold text-[var(--foreground,#f8fafc)]">
+            <span>${a.title}</span>
+            <span class="px-2 py-0.5 rounded text-[10px] bg-rose-500/20 text-rose-400 font-bold">Critical</span>
+          </div>
+          <p class="text-[var(--muted-foreground,#94a3b8)] leading-relaxed">${a.desc}</p>
+          <div class="text-[11px] text-blue-400 font-semibold pt-1">Recommended Intervention: ${a.act}</div>
+        </div>
+      `).join('');
+
+      // Watchlist
+      const wlContainer = document.getElementById('overview-watchlist-container');
+      const topWatch = [...filteredEmployees]
+        .filter(e => e["Risk Level"] === 'High')
+        .sort((a, b) => b["Overtime Hours Per Week"] - a["Overtime Hours Per Week"])
+        .slice(0, 4);
+
+      wlContainer.innerHTML = topWatch.map(e => `
+        <div onclick="openEmployeeModal('${e["Employee ID"]}')" class="py-2.5 px-2 flex items-center justify-between hover:bg-blue-500/10 rounded-xl cursor-pointer transition text-xs">
+          <div>
+            <div class="font-bold text-[var(--foreground,#f8fafc)]">${e["Employee Name"]} (${e["Employee ID"]})</div>
+            <div class="text-[10px] text-[var(--muted-foreground,#94a3b8)]">${e["Job Role"]} • ${e["Department"]}</div>
+          </div>
+          <div class="text-right">
+            <span class="font-bold text-amber-400">+${e["Overtime Hours Per Week"]}h OT</span>
+            <span class="text-[10px] text-[var(--muted-foreground,#94a3b8)] block">Prod: ${e["Productivity Score"]}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderRecommendations() {
+      const container = document.getElementById('recommendations-container');
+      const recs = [
+        {
+          title: "Overtime-Productivity Decoupling & Burnout Risk",
+          sev: "Critical",
+          scope: "Cloud & Infrastructure Practices",
+          issue: "Teams in CloudOps log an average of 14.2 hrs/week overtime, yet task completion rates have fallen below 60%.",
+          metrics: "Weekly OT: 14.2 hrs | Avg Daily Hours: 10.4h | Productivity: 52.4 / 100",
+          intervention: "Institute an immediate overtime cap (max 4h/week), re-scope sprint deliverables, and pair senior engineers with mid-level peers.",
+          monitor: "Overtime Hours Per Week (<5.0h) and Defect Escape Ratio over 2 sprints.",
+          reason: "Diminishing marginal returns on cognitive labor: prolonged fatigue impairs code quality and task turnaround."
+        },
+        {
+          title: "Disengagement & Sentiment Erosion Cohort",
+          sev: "Critical",
+          scope: "Cross-Department (22 Engineers)",
+          issue: "22 engineers exhibit high workload (>78) coupled with critical disengagement (<45), signaling imminent retention attrition.",
+          metrics: "Avg Workload: 84.1 | Avg Engagement: 41.2 | Avg Absence: 5.6 days",
+          intervention: "Conduct confidential manager 1-on-1 listening sessions, audit tooling friction, and reallocate heavy maintenance tickets.",
+          monitor: "Pulse Survey Engagement Score (+15 pts over 60 days) and Unplanned Absences.",
+          reason: "Prolonged high workload with unaddressed delivery friction creates silent disengagement and burnout."
+        },
+        {
+          title: "Senior Architect Delivery Bottleneck & Delegation Gap",
+          sev: "Warning",
+          scope: "Senior Leads & Technology Architects",
+          issue: "Senior technical consultants are handling excessive routine tactical tickets (avg 52/mo) instead of architectural design.",
+          metrics: "Lead Assigned Tasks: 52 tasks/mo | Avg OT: 11.5 hrs/wk",
+          intervention: "Delegate standard ticket resolution to junior/mid-level engineers and protect senior leads for design and mentoring.",
+          monitor: "Lead engineer overtime reduction and junior engineer ticket velocity ramp-up.",
+          reason: "When senior staff are consumed by tactical ticket execution, architecture governance degrades."
+        }
+      ];
+
+      container.innerHTML = recs.map(r => `
+        <div class="p-5 rounded-3xl bg-[var(--card,#1e293b)] border border-[var(--border,#334155)] space-y-3">
+          <div class="flex items-center justify-between pb-2 border-b border-[var(--border,#334155)]">
+            <div class="flex items-center space-x-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold ${r.sev === 'Critical' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}">${r.sev} Severity</span>
+              <h4 class="text-sm font-bold text-[var(--foreground,#f8fafc)]">${r.title}</h4>
+            </div>
+            <span class="text-xs text-[var(--muted-foreground,#94a3b8)]">${r.scope}</span>
+          </div>
+          <p class="text-xs text-[var(--foreground,#f8fafc)] leading-relaxed">${r.issue}</p>
+          <div class="p-2.5 rounded-xl bg-[var(--background,#0f172a)] text-[11px] font-mono text-[var(--muted-foreground,#94a3b8)]">${r.metrics}</div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
+            <div class="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
+              <strong class="block text-emerald-200 uppercase text-[10px]">Suggested Intervention:</strong>
+              ${r.intervention}
+            </div>
+            <div class="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-300">
+              <strong class="block text-blue-200 uppercase text-[10px]">Metric to Monitor:</strong>
+              ${r.monitor}
+            </div>
+          </div>
+          <div class="text-[11px] text-[var(--muted-foreground,#94a3b8)] italic pt-1">
+            <strong>Diagnostic Reason:</strong> ${r.reason}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderDeptRiskTable() {
+      const tbody = document.getElementById('dept-risk-tbody');
+      const depts = [...new Set(currentEmployees.map(e => e["Department"]))];
+      const stats = depts.map(d => {
+        const list = currentEmployees.filter(e => e["Department"] === d);
+        const high = list.filter(e => e["Risk Level"] === 'High').length;
+        const avgWl = (list.reduce((s, e) => s + e["Workload Score"], 0) / list.length).toFixed(1);
+        const avgOt = (list.reduce((s, e) => s + e["Overtime Hours Per Week"], 0) / list.length).toFixed(1);
+        return { dept: d, count: list.length, high, ratio: ((high / list.length) * 100).toFixed(1), avgWl, avgOt };
+      }).sort((a, b) => b.ratio - a.ratio);
+
+      tbody.innerHTML = stats.map(s => `
+        <tr class="hover:bg-[var(--background,#0f172a)]/40">
+          <td class="py-2.5 px-3 font-semibold text-[var(--foreground,#f8fafc)]">${s.dept}</td>
+          <td class="py-2.5 px-3 text-right">${s.count}</td>
+          <td class="py-2.5 px-3 text-right font-bold text-rose-400">${s.high}</td>
+          <td class="py-2.5 px-3 text-right font-semibold">${s.ratio}%</td>
+          <td class="py-2.5 px-3 text-right">${s.avgWl}</td>
+          <td class="py-2.5 px-3 text-right">${s.avgOt} hrs/wk</td>
+        </tr>
+      `).join('');
+    }
+
+    function initDataDictionary() {
+      const tbody = document.getElementById('dictionary-tbody');
+      tbody.innerHTML = INITIAL_DATASET.dataDictionary.map(d => `
+        <tr class="hover:bg-[var(--background,#0f172a)]/30">
+          <td class="py-2 px-3 font-mono font-bold text-blue-400">${d["Column Name"]}</td>
+          <td class="py-2 px-3 text-[11px] text-[var(--muted-foreground,#94a3b8)]">${d["Data Type"]}</td>
+          <td class="py-2 px-3 font-mono text-[11px]">${d["Score / Value Range"]}</td>
+          <td class="py-2 px-3">${d["Definition"]}</td>
+          <td class="py-2 px-3 font-mono text-[10px] text-[var(--muted-foreground,#94a3b8)]">${d["Formula / Derivation"]}</td>
+        </tr>
+      `).join('');
+    }
+
+    /* PURE SVG CHART RENDERERS */
+    function renderAllCharts() {
+      renderMacroTrendChart();
+      renderRiskDonutChart('chart-risk-donut');
+      renderRiskDonutChart('chart-e-container');
+      renderChartA();
+      renderChartB();
+      renderChartC();
+      renderChartD();
+      renderChartF();
+    }
+
+    function renderMacroTrendChart() {
+      const el = document.getElementById('chart-macro-trend');
+      if (!el) return;
+      const trends = INITIAL_DATASET.monthlyTrends;
+      const w = el.clientWidth || 600;
+      const h = el.clientHeight || 250;
+      const padL = 40, padR = 40, padT = 20, padB = 30;
+
+      const innerW = w - padL - padR;
+      const innerH = h - padT - padB;
+
+      // X scale: 12 months
+      const stepX = innerW / (trends.length - 1);
+
+      // Y scale left: Productivity (40 to 100)
+      const getYProd = val => padT + innerH - ((val - 40) / 60) * innerH;
+
+      // Y scale right: Overtime (0 to 16)
+      const getYOT = val => padT + innerH - (val / 16) * innerH;
+
+      let prodPath = '';
+      let compPath = '';
+      let bars = '';
+      let xLabels = '';
+
+      trends.forEach((t, i) => {
+        const x = padL + i * stepX;
+        const yP = getYProd(t["Average Productivity"]);
+        const yC = getYProd(t["Task Completion Rate"]);
+        const yO = getYOT(t["Average Overtime"]);
+
+        if (i === 0) {
+          prodPath = `M ${x} ${yP}`;
+          compPath = `M ${x} ${yC}`;
+        } else {
+          prodPath += ` L ${x} ${yP}`;
+          compPath += ` L ${x} ${yC}`;
+        }
+
+        // Bar for overtime
+        bars += `<rect x="${x - 8}" y="${yO}" width="16" height="${padT + innerH - yO}" fill="#f59e0b" opacity="0.65" rx="3"><title>${t.Month}: ${t["Average Overtime"]} hrs OT</title></rect>`;
+        xLabels += `<text x="${x}" y="${h - 8}" font-size="10" fill="#94a3b8" text-anchor="middle">${t.Month.split('-')[1]}</text>`;
+      });
+
+      el.innerHTML = `
+        <svg width="100%" height="100%" viewBox="0 0 ${w} ${h}">
+          <line x1="${padL}" y1="${padT + innerH}" x2="${w - padR}" y2="${padT + innerH}" stroke="#334155" stroke-width="1"/>
+          ${bars}
+          <path d="${compPath}" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="4 4"/>
+          <path d="${prodPath}" fill="none" stroke="#3b82f6" stroke-width="3"/>
+          ${trends.map((t, i) => `<circle cx="${padL + i * stepX}" cy="${getYProd(t["Average Productivity"])}" r="4" fill="#3b82f6"><title>${t.Month} Productivity: ${t["Average Productivity"]}</title></circle>`).join('')}
+          ${xLabels}
+        </svg>
+      `;
+    }
+
+    function renderRiskDonutChart(containerId) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      const low = filteredEmployees.filter(e => e["Risk Level"] === 'Low').length;
+      const med = filteredEmployees.filter(e => e["Risk Level"] === 'Medium').length;
+      const high = filteredEmployees.filter(e => e["Risk Level"] === 'High').length;
+      const total = low + med + high || 1;
+
+      const pLow = (low / total);
+      const pMed = (med / total);
+      const pHigh = (high / total);
+
+      // SVG Donut representation
+      const size = 160;
+      const r = 50;
+      const circ = 2 * Math.PI * r;
+
+      const offLow = 0;
+      const offMed = circ * pLow;
+      const offHigh = circ * (pLow + pMed);
+
+      el.innerHTML = `
+        <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+          <circle cx="80" cy="80" r="${r}" fill="none" stroke="#334155" stroke-width="24"/>
+          <circle cx="80" cy="80" r="${r}" fill="none" stroke="#10b981" stroke-width="24" stroke-dasharray="${pLow * circ} ${circ}" stroke-dashoffset="0" transform="rotate(-90 80 80)"/>
+          <circle cx="80" cy="80" r="${r}" fill="none" stroke="#f59e0b" stroke-width="24" stroke-dasharray="${pMed * circ} ${circ}" stroke-dashoffset="${-offMed}" transform="rotate(-90 80 80)"/>
+          <circle cx="80" cy="80" r="${r}" fill="none" stroke="#ef4444" stroke-width="24" stroke-dasharray="${pHigh * circ} ${circ}" stroke-dashoffset="${-offHigh}" transform="rotate(-90 80 80)"/>
+          <text x="80" y="85" text-anchor="middle" font-size="14" font-weight="bold" fill="#f8fafc">${total}</text>
+        </svg>
+      `;
+
+      const legend = document.getElementById('risk-legend');
+      if (legend && containerId === 'chart-risk-donut') {
+        legend.innerHTML = `
+          <div class="flex justify-between"><span><span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5"></span>Low Risk</span><span class="font-bold">${low} (${(pLow*100).toFixed(0)}%)</span></div>
+          <div class="flex justify-between"><span><span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 mr-1.5"></span>Medium Risk</span><span class="font-bold">${med} (${(pMed*100).toFixed(0)}%)</span></div>
+          <div class="flex justify-between"><span><span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 mr-1.5"></span>High Risk</span><span class="font-bold">${high} (${(pHigh*100).toFixed(0)}%)</span></div>
+        `;
+      }
+    }
+
+    function renderChartA() {
+      const el = document.getElementById('chart-a-container');
+      if (!el) return;
+      const trends = INITIAL_DATASET.monthlyTrends;
+      const w = el.clientWidth || 500;
+      const h = el.clientHeight || 240;
+      const padL = 35, padR = 20, padT = 20, padB = 30;
+      const innerW = w - padL - padR;
+      const innerH = h - padT - padB;
+      const stepX = innerW / (trends.length - 1);
+      const getY = val => padT + innerH - ((val - 40) / 60) * innerH;
+
+      let pPath = '', cPath = '', ePath = '';
+      trends.forEach((t, i) => {
+        const x = padL + i * stepX;
+        const yP = getY(t["Average Productivity"]);
+        const yC = getY(t["Task Completion Rate"]);
+        const yE = getY(t["Average Engagement"]);
+        if (i === 0) { pPath = `M ${x} ${yP}`; cPath = `M ${x} ${yC}`; ePath = `M ${x} ${yE}`; }
+        else { pPath += ` L ${x} ${yP}`; cPath += ` L ${x} ${yC}`; ePath += ` L ${x} ${yE}`; }
+      });
+
+      el.innerHTML = `
+        <svg width="100%" height="100%" viewBox="0 0 ${w} ${h}">
+          <line x1="${padL}" y1="${padT + innerH}" x2="${w - padR}" y2="${padT + innerH}" stroke="#334155"/>
+          <path d="${ePath}" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="3 3"/>
+          <path d="${cPath}" fill="none" stroke="#10b981" stroke-width="2.5"/>
+          <path d="${pPath}" fill="none" stroke="#3b82f6" stroke-width="3"/>
+          ${trends.map((t, i) => `<circle cx="${padL + i * stepX}" cy="${getY(t["Average Productivity"])}" r="3" fill="#3b82f6"><title>${t.Month}: ${t["Average Productivity"]}</title></circle>`).join('')}
+          ${trends.map((t, i) => `<text x="${padL + i * stepX}" y="${h - 8}" font-size="10" fill="#94a3b8" text-anchor="middle">${t.Month.split('-')[1]}</text>`).join('')}
+        </svg>
+      `;
+    }
+
+    function renderChartB() {
+      const el = document.getElementById('chart-b-container');
+      if (!el) return;
+      const w = el.clientWidth || 500;
+      const h = el.clientHeight || 240;
+      const pad = 35;
+      const innerW = w - pad * 2;
+      const innerH = h - pad * 2;
+
+      // X: Workload (20 to 100), Y: Productivity (30 to 100)
+      const getX = wl => pad + ((wl - 20) / 80) * innerW;
+      const getY = pr => pad + innerH - ((pr - 30) / 70) * innerH;
+
+      const dots = filteredEmployees.map(e => {
+        const cx = getX(e["Workload Score"]);
+        const cy = getY(e["Productivity Score"]);
+        const col = e["Risk Level"] === 'High' ? '#ef4444' : e["Risk Level"] === 'Medium' ? '#f59e0b' : '#10b981';
+        return `<circle cx="${cx}" cy="${cy}" r="3.5" fill="${col}" opacity="0.85"><title>${e["Employee Name"]}\nWorkload: ${e["Workload Score"]}\nProductivity: ${e["Productivity Score"]}</title></circle>`;
+      }).join('');
+
+      el.innerHTML = `
+        <svg width="100%" height="100%" viewBox="0 0 ${w} ${h}">
+          <line x1="${pad}" y1="${pad + innerH}" x2="${w - pad}" y2="${pad + innerH}" stroke="#334155"/>
+          <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${pad + innerH}" stroke="#334155"/>
+          <line x1="${getX(75)}" y1="${pad}" x2="${getX(75)}" y2="${pad + innerH}" stroke="#ef4444" stroke-dasharray="3 3"/>
+          ${dots}
+          <text x="${w/2}" y="${h - 5}" font-size="10" fill="#94a3b8" text-anchor="middle">Workload Score →</text>
+        </svg>
+      `;
+    }
+
+    function renderChartC() {
+      const el = document.getElementById('chart-c-container');
+      if (!el) return;
+      const bins = [
+        { label: '7-8h', min: 7.0, max: 8.0 },
+        { label: '8-9h', min: 8.0, max: 9.0 },
+        { label: '9-10h', min: 9.0, max: 10.0 },
+        { label: '10-11h', min: 10.0, max: 11.0 },
+        { label: '11h+', min: 11.0, max: 24.0 }
+      ];
+
+      const data = bins.map(b => {
+        const sub = filteredEmployees.filter(e => e["Average Working Hours Per Day"] >= b.min && e["Average Working Hours Per Day"] < b.max);
+        const count = sub.length;
+        const avgProd = count ? (sub.reduce((s, e) => s + e["Productivity Score"], 0) / count) : 0;
+        return { label: b.label, avgProd, count };
+      });
+
+      const w = el.clientWidth || 500;
+      const h = el.clientHeight || 240;
+      const padL = 40, padR = 20, padT = 20, padB = 30;
+      const innerW = w - padL - padR;
+      const innerH = h - padT - padB;
+      const barW = innerW / data.length;
+
+      const bars = data.map((d, i) => {
+        const x = padL + i * barW + 15;
+        const barH = (d.avgProd / 100) * innerH;
+        const y = padT + innerH - barH;
+        const color = i >= 3 ? '#ef4444' : '#3b82f6';
+        return `
+          <rect x="${x}" y="${y}" width="${barW - 30}" height="${barH}" fill="${color}" rx="4">
+            <title>${d.label}: ${d.avgProd.toFixed(1)} avg productivity (${d.count} emps)</title>
+          </rect>
+          <text x="${x + (barW - 30)/2}" y="${y - 6}" font-size="10" font-weight="bold" fill="#f8fafc" text-anchor="middle">${d.avgProd.toFixed(0)}</text>
+          <text x="${x + (barW - 30)/2}" y="${h - 8}" font-size="10" fill="#94a3b8" text-anchor="middle">${d.label}</text>
+        `;
+      }).join('');
+
+      el.innerHTML = `
+        <svg width="100%" height="100%" viewBox="0 0 ${w} ${h}">
+          <line x1="${padL}" y1="${padT + innerH}" x2="${w - padR}" y2="${padT + innerH}" stroke="#334155"/>
+          ${bars}
+        </svg>
+      `;
+    }
+
+    function renderChartD() {
+      const el = document.getElementById('chart-d-container');
+      if (!el) return;
+      const depts = [...new Set(filteredEmployees.map(e => e["Department"]))];
+      const stats = depts.map(d => {
+        const sub = filteredEmployees.filter(e => e["Department"] === d);
+        return {
+          dept: d,
+          prod: (sub.reduce((s, e) => s + e["Productivity Score"], 0) / sub.length),
+          wl: (sub.reduce((s, e) => s + e["Workload Score"], 0) / sub.length)
+        };
+      });
+
+      const w = el.clientWidth || 500;
+      const h = el.clientHeight || 240;
+      const padL = 90, padR = 20, padT = 15, padB = 20;
+      const innerW = w - padL - padR;
+      const stepY = (h - padT - padB) / stats.length;
+
+      const rows = stats.map((s, i) => {
+        const y = padT + i * stepY;
+        const prodW = (s.prod / 100) * innerW;
+        const wlW = (s.wl / 100) * innerW;
+        return `
+          <text x="${padL - 10}" y="${y + 12}" font-size="9" fill="#94a3b8" text-anchor="end">${s.dept.split(' ')[0]}</text>
+          <rect x="${padL}" y="${y}" width="${prodW}" height="8" fill="#3b82f6" rx="2"><title>${s.dept} Prod: ${s.prod.toFixed(1)}</title></rect>
+          <rect x="${padL}" y="${y + 10}" width="${wlW}" height="8" fill="#f59e0b" rx="2"><title>${s.dept} Workload: ${s.wl.toFixed(1)}</title></rect>
+        `;
+      }).join('');
+
+      el.innerHTML = `
+        <svg width="100%" height="100%" viewBox="0 0 ${w} ${h}">
+          <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${h - padB}" stroke="#334155"/>
+          ${rows}
+        </svg>
+      `;
+    }
+
+    function renderChartF() {
+      const el = document.getElementById('chart-f-container');
+      if (!el) return;
+      const w = el.clientWidth || 500;
+      const h = el.clientHeight || 220;
+      const pad = 35;
+      const innerW = w - pad * 2;
+      const innerH = h - pad * 2;
+
+      // X: Overtime (0 to 24), Y: Engagement (20 to 100)
+      const getX = ot => pad + (ot / 24) * innerW;
+      const getY = eg => pad + innerH - ((eg - 20) / 80) * innerH;
+
+      const dots = filteredEmployees.map(e => {
+        const cx = getX(e["Overtime Hours Per Week"]);
+        const cy = getY(e["Employee Engagement Score"]);
+        return `<circle cx="${cx}" cy="${cy}" r="3.5" fill="#8b5cf6" opacity="0.8"><title>${e["Employee Name"]}: ${e["Overtime Hours Per Week"]}h OT, ${e["Employee Engagement Score"]} Eng</title></circle>`;
+      }).join('');
+
+      el.innerHTML = `
+        <svg width="100%" height="100%" viewBox="0 0 ${w} ${h}">
+          <line x1="${pad}" y1="${pad + innerH}" x2="${w - pad}" y2="${pad + innerH}" stroke="#334155"/>
+          <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${pad + innerH}" stroke="#334155"/>
+          ${dots}
+          <text x="${w/2}" y="${h - 5}" font-size="10" fill="#94a3b8" text-anchor="middle">Overtime (hrs/week) →</text>
+        </svg>
+      `;
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      const activeTab = document.getElementById('tab-' + tabId);
+      if (activeTab) activeTab.classList.add('active');
+
+      ['overview', 'analytics', 'employees', 'risks', 'data'].forEach(id => {
+        const btn = document.getElementById('tab-btn-' + id);
+        if (id === tabId) {
+          btn.className = 'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition bg-blue-600 text-white shadow-sm';
+        } else {
+          btn.className = 'w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-[var(--foreground,#f8fafc)] hover:bg-[var(--background,#0f172a)]';
+        }
+      });
+
+      renderAllCharts();
+    }
+
+    function resetToDefaultData() {
+      currentEmployees = [...INITIAL_DATASET.employees];
+      document.getElementById('search-input').value = '';
+      document.getElementById('filter-month').value = 'all';
+      document.getElementById('filter-dept').value = 'all';
+      updateTeamDropdown();
+      document.getElementById('filter-risk').value = 'all';
+      applyFilters();
+      alert('Reset to original synthetic baseline dataset.');
+    }
+
+    function exportFilteredCSV() {
+      if (filteredEmployees.length === 0) {
+        alert('No records to export.');
+        return;
+      }
+      const headers = Object.keys(filteredEmployees[0]);
+      const csvRows = [headers.join(',')];
+      filteredEmployees.forEach(e => {
+        const row = headers.map(h => {
+          const val = e[h];
+          if (typeof val === 'string' && val.includes(',')) return `"${val}"`;
+          return val;
+        });
+        csvRows.push(row.join(','));
+      });
+      const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'workpulse_filtered_employees.csv');
+      link.click();
+    }
+
+    function setupEventListeners() {
+      document.getElementById('theme-toggle-btn').addEventListener('click', toggleTheme);
+      document.getElementById('search-input').addEventListener('input', applyFilters);
+      document.getElementById('filter-month').addEventListener('change', applyFilters);
+      document.getElementById('filter-dept').addEventListener('change', () => {
+        updateTeamDropdown();
+        applyFilters();
+      });
+      document.getElementById('filter-team').addEventListener('change', applyFilters);
+      document.getElementById('filter-risk').addEventListener('change', applyFilters);
+      document.getElementById('reset-filters-btn').addEventListener('click', () => {
+        document.getElementById('search-input').value = '';
+        document.getElementById('filter-month').value = 'all';
+        document.getElementById('filter-dept').value = 'all';
+        updateTeamDropdown();
+        document.getElementById('filter-risk').value = 'all';
+        applyFilters();
+      });
+      document.getElementById('export-csv-top-btn').addEventListener('click', exportFilteredCSV);
+      document.getElementById('table-export-csv-btn').addEventListener('click', exportFilteredCSV);
+      document.getElementById('btn-export-csv-data-tab').addEventListener('click', exportFilteredCSV);
+      document.getElementById('page-size-select').addEventListener('change', (e) => {
+        pageSize = parseInt(e.target.value);
+        currentPage = 1;
+        renderEmployeeTable();
+      });
+      document.getElementById('prev-page-btn').addEventListener('click', () => {
+        if (currentPage > 1) { currentPage--; renderEmployeeTable(); }
+      });
+      document.getElementById('next-page-btn').addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredEmployees.length / pageSize);
+        if (currentPage < totalPages) { currentPage++; renderEmployeeTable(); }
+      });
+    }
+  </script>
+</body>
+</html>
