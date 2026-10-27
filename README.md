@@ -1,5 +1,6 @@
 # WorkPulse AI — Employee Productivity & Workload Intelligence
 
+[![⚡ Live Demo](https://img.shields.io/badge/⚡_LIVE_DEMO-Workforce_Productivity-0369A1?style=for-the-badge)](https://themahespanda.github.io/Employee-Productivity-vs.-Workload/)
 > **Enterprise Workload Intelligence Platform**  
 > *Diagnostic Solution for Problem Statement:* “Management observes declining productivity despite increasing working hours. Build an AI system that analyzes workload, overtime, absenteeism, task completion, employee engagement and performance data to identify potential operational bottlenecks and recommend workload interventions.”  
 > **Context:** Illustrative Infosys enterprise business structure with 100% reproducible synthetic data.
